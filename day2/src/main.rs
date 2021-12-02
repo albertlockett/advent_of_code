@@ -5,7 +5,9 @@ fn main() {
   println!("now it is day 2 I am in the boat");
 
   let mut h_pos = 0i64;
-  let mut v_pos = 0i64;
+  let mut v_pos1 = 0i64;
+  let mut v_pos2 = 0i64;
+  let mut aim = 0i64;
 
   // read my instructions from the input
   let instructions = match fs::read_to_string("input.txt") {
@@ -36,17 +38,26 @@ fn main() {
 
     match direction {
       "forward" => {
-        h_pos = h_pos + magnitude
+        incr(&mut h_pos, magnitude);
+        incr(&mut v_pos2, aim * magnitude);
       },
       "up" => {
-        v_pos = v_pos + magnitude
+        incr(&mut v_pos1, -magnitude);
+        incr(&mut aim, -magnitude);
       }
       "down" => {
-        v_pos = v_pos - magnitude
+        incr(&mut v_pos1, magnitude);
+        incr(&mut aim, magnitude);
       }
       _ => {} // OOPS!
     }
   }
 
-  println!("The final position is {} x {} = {}",h_pos, v_pos, h_pos * v_pos)
+  println!("The final position  caclulated like its part 1 is {} x {} = {}", h_pos, v_pos1, h_pos * v_pos1);
+  println!("The final position  caclulated like its part 1 is {} x {} = {}", h_pos, v_pos2, h_pos * v_pos2);
 }
+
+fn incr(r: &mut i64, magnitude: i64) {
+  *r = *r + magnitude;
+}
+
