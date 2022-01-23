@@ -53,8 +53,6 @@ pub fn combination_sum_inner(candidates:&Vec<i32>, target: i32, offset: usize) -
       if next_target > 0 {
         let inner_results = combination_sum_inner(&candidates, next_target, i+1);
         for inner_result in inner_results {
-          let mut result = stack.vals.clone();
-          result.append(&mut inner_result.clone());
           results.push(stack.vals.iter().cloned().chain(inner_result.iter().cloned()).collect());
         }
       }
