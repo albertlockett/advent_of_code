@@ -1,4 +1,4 @@
-# AdventOfCode2021
-beautiful code.. and i obviousltyy willl finish this whole thing
+# AdventOfCode2022
+beautiful code.. and i obviouslty will finish this whole thing
 
-https://adventofcode.com/2021/day/1
+https://adventofcode.com/2022/day/1
