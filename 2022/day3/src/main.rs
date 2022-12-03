@@ -8,23 +8,27 @@ const ASCII_A_UPPER: u8 = 0x40;
 const ASCII_Z_UPPER: u8 = ASCII_A_UPPER + LETTERS_IN_ALPHA;
 
 macro_rules! is_lower {
-    ($b:expr) => ({ *$b > ASCII_A_LOWER && *$b <= ASCII_Z_LOWER })
+    ($b:expr) => {{
+        *$b > ASCII_A_LOWER && *$b <= ASCII_Z_LOWER
+    }};
 }
 
 macro_rules! letternum_lower {
-    ($b:expr) => ({
+    ($b:expr) => {{
         u32::from($b - ASCII_A_LOWER)
-    })
+    }};
 }
 
 macro_rules! is_upper {
-    ($b:expr) => ({ *$b > ASCII_A_UPPER && *$b <= ASCII_Z_UPPER })
+    ($b:expr) => {{
+        *$b > ASCII_A_UPPER && *$b <= ASCII_Z_UPPER
+    }};
 }
 
 macro_rules! letternum_upper {
-    ($b:expr) => ({
+    ($b:expr) => {{
         u32::from($b - ASCII_A_UPPER)
-    })
+    }};
 }
 
 macro_rules! priority_upper {
