@@ -1,10 +1,7 @@
-use std::{
-    fs,
-    str::FromStr,
-};
+use std::{fs, str::FromStr};
 
 fn main() {
-    let list_of_elf_calories= match fs::read_to_string("input.txt") {
+    let list_of_elf_calories = match fs::read_to_string("input.txt") {
         Ok(v) => v,
         Err(e) => {
             eprintln!("biffed it reading the elf calories {:?}", e);
@@ -37,8 +34,11 @@ fn main() {
                 curr_elf_cals += cals;
             }
         };
-    };
+    }
 
     println!("part 1 - max elf cals {:?}", top_cal_elf1);
-    println!("part 2 - top 3 elf cals {:?}", top_cal_elf1 + top_cal_elf2 + top_cal_elf3);
+    println!(
+        "part 2 - top 3 elf cals {:?}",
+        top_cal_elf1 + top_cal_elf2 + top_cal_elf3
+    );
 }
