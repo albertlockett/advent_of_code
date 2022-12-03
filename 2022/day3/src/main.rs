@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 
 const LETTERS_IN_ALPHA: u8 = 26;
 const ASCII_A_LOWER: u8 = 0x60;
@@ -7,6 +7,31 @@ const ASCII_Z_LOWER: u8 = ASCII_A_LOWER + LETTERS_IN_ALPHA;
 const ASCII_A_UPPER: u8 = 0x40;
 const ASCII_Z_UPPER: u8 = ASCII_A_UPPER + LETTERS_IN_ALPHA;
 
+macro_rules! is_lower {
+    ($b:expr) => ({ *$b > ASCII_A_LOWER && *$b <= ASCII_Z_LOWER })
+}
+
+macro_rules! letternum_lower {
+    ($b:expr) => ({
+        u32::from($b - ASCII_A_LOWER)
+    })
+}
+
+macro_rules! is_upper {
+    ($b:expr) => ({ *$b > ASCII_A_UPPER && *$b <= ASCII_Z_UPPER })
+}
+
+macro_rules! letternum_upper {
+    ($b:expr) => ({
+        u32::from($b - ASCII_A_UPPER)
+    })
+}
+
+macro_rules! priority_upper {
+    ($b:expr) => {
+        $b + u32::from(LETTERS_IN_ALPHA)
+    };
+}
 
 trait Mask {
     fn new() -> Self;
@@ -46,30 +71,28 @@ fn priority_of_line(line: &str) -> u32 {
         curr_offset += 1;
 
         // handle lowercase letter
-        if *b > ASCII_A_LOWER && *b <= ASCII_Z_LOWER {
-            let letter_num = u32::from(b - ASCII_A_LOWER);
-            let item_in_comp_1 = lmask.contains(letter_num);
+        if is_lower!(b) {
+            let letter_num = letternum_lower!(b);
+            let item_in_comp_1 = lmask.contains(letternum_lower!(b));
 
             if !in_compartment_2 && !item_in_comp_1 {
                 lmask.insert(letter_num);
             }
             if in_compartment_2 && item_in_comp_1 {
-                let priority = letter_num;
-                return Some(priority);
+                return Some(letter_num);
             }
         }
 
         // handle uppercase letter
-        if *b > ASCII_A_UPPER && *b <= ASCII_Z_UPPER {
-            let letter_num = u32::from(b - ASCII_A_UPPER);
+        if is_upper!(b) {
+            let letter_num = letternum_upper!(b);
             let item_in_comp_1 = umask.contains(letter_num);
             if !in_compartment_2 && !item_in_comp_1 {
                 umask.insert(letter_num);
             }
 
             if in_compartment_2 && item_in_comp_1 {
-                let priority = letter_num + u32::from(LETTERS_IN_ALPHA);
-                return Some(priority);
+                return Some(priority_upper!(letter_num));
             }
         }
 
@@ -89,11 +112,11 @@ fn priority_of_line_test1() {
 }
 
 fn fill_masks(b: &u8, lmask: &mut u32, umask: &mut u32) {
-    if *b > ASCII_A_LOWER && *b <= ASCII_Z_LOWER {
-        lmask.insert(u32::from(b - ASCII_A_LOWER));
+    if is_lower!(b) {
+        lmask.insert(letternum_lower!(b));
     }
-    if *b > ASCII_A_UPPER && *b <= ASCII_Z_UPPER {
-        umask.insert(u32::from(b - ASCII_A_UPPER));
+    if is_upper!(b) {
+        umask.insert(letternum_upper!(b));
     }
 }
 
@@ -111,16 +134,16 @@ fn priority_of_line_group(line1: &str, line2: &str, line3: &str) -> u32 {
     });
 
     let priority = line3.as_bytes().into_iter().find_map(|b| {
-        if *b > ASCII_A_LOWER && *b <= ASCII_Z_LOWER {
-            let letter_num = u32::from(b - ASCII_A_LOWER);
+        if is_lower!(b) {
+            let letter_num = letternum_lower!(b);
             if lmask1.contains(letter_num) && lmask2.contains(letter_num) {
                 return Some(letter_num);
             }
         }
-        if *b > ASCII_A_UPPER && *b <= ASCII_Z_UPPER {
-            let letter_num = u32::from(b - ASCII_A_UPPER);
+        if is_upper!(b) {
+            let letter_num = letternum_upper!(b);
             if umask1.contains(letter_num) && umask2.contains(letter_num) {
-                return Some(letter_num + u32::from(LETTERS_IN_ALPHA));
+                return Some(priority_upper!(letter_num));
             }
         }
         None
