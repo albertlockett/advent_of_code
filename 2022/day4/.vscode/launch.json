@@ -1,0 +1,16 @@
+{
+    "configurations": [
+    {
+        "name": "day 4 (lldb) Launch",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/main",
+        "args": ["<", "${workspaceFolder}/input.txt"],
+        "stopAtEntry": false,
+        "cwd": "${fileDirname}",
+        "environment": [],
+        "externalConsole": true,
+        "MIMode": "lldb",
+    }
+    ]
+}
