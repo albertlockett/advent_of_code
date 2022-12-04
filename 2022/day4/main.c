@@ -63,8 +63,34 @@ int is_region_contained(struct elf_region_pair pair) {
     return 0;
 }
 
+int do_limits_overlap(struct region_limits r1, struct region_limits r2) {
+    if (
+        r1.lower <= r2.lower &&
+        r2.lower <= r1.upper
+    ) {
+        return 1;
+    }
+    return 0;
+}
+
+int do_regions_overlap(struct elf_region_pair pair) {
+    struct region_limits r1 = pair.elf_one;
+    struct region_limits r2 = pair.elf_two;
+
+    int overlapping = do_limits_overlap(r1, r2);
+    if (overlapping > 0) {
+        return 1;
+    }
+    overlapping = do_limits_overlap(r2, r1);
+    return overlapping;
+}
+
+
+
 int main(int argc, char** argv) {
     int regions_contained = 0;
+    int regions_overlapped = 0;
+
     struct elf_region_pair pair;
     int continue_iter;
 
@@ -72,8 +98,10 @@ int main(int argc, char** argv) {
     while (DO_CONTINIUE(continue_iter)) {
         pair = parse_next_pair(&continue_iter);
         regions_contained += is_region_contained(pair);
+        regions_overlapped += do_regions_overlap(pair);
     }
     
     printf("part 1 = there are %d contained regions\n", regions_contained);
+    printf("part 2 = there are %d overlapping regions\n", regions_overlapped);
     return 0;
 }
