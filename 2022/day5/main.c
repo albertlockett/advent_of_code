@@ -29,6 +29,7 @@ char pop_crate(crate** stack) {
   crate* old_top = *stack;
   char supply = old_top->supply;
   *stack = old_top->bottom;
+  free(old_top);
   return supply;
 }
 
