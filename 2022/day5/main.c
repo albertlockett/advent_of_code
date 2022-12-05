@@ -103,15 +103,34 @@ move parse_next_move(int* iter_continue) {
   return next_move;
 }
 
-void handle_next_move(move move, crate* stacks[]) {
-  for (int i = 0; i < move.limit; i++) {
-    char supply = pop_crate(&stacks[move.from-1]);
-    stacks[move.to-1] = push_crate(stacks[move.to-1], supply);
+void handle_next_move(move move, crate* stacks[], int mover_9001_mode) {
+  if (mover_9001_mode) {
+    crate *tmp = malloc(sizeof (crate));
+
+    for (int i = 0; i < move.limit; i++) {
+      char supply = pop_crate(&stacks[move.from-1]);
+      tmp = push_crate(tmp, supply);
+    }
+    for (int i = 0; i < move.limit; i++) {
+      char supply = pop_crate(&tmp);
+      stacks[move.to-1] = push_crate(stacks[move.to-1], supply);
+    }
+    free(tmp);
+  } else {
+    for (int i = 0; i < move.limit; i++) {
+      char supply = pop_crate(&stacks[move.from-1]);
+      stacks[move.to-1] = push_crate(stacks[move.to-1], supply);
+    }
   }
 }
 
+// usage:
+// cat ./input.txt| ./main [9000_mode]
 int main(int argc, char** argv) {
-  crate* stacks[9]; // if there's more than 8 stacks I'll eat a lemon
+  int mover_9001_mode = 0;
+  if (argc > 1) mover_9001_mode = 1;
+
+  crate* stacks[9]; // if there's more than 9 stacks I'll eat a lemon
   for (int i = 0; i < 9; i++) {
     stacks[i] = malloc(sizeof (crate));
     stacks[i]->supply = EMPTY_STACK;
@@ -122,7 +141,7 @@ int main(int argc, char** argv) {
   move next_move;
   while (iter_continue) {
     next_move = parse_next_move(&iter_continue);
-    handle_next_move(next_move, stacks);
+    handle_next_move(next_move, stacks, mover_9001_mode);
   }
 
   for (int i = 0; i < 9; i++) {
