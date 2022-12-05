@@ -1,18 +1,35 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define EMPTY_STACK 0x00
+
+#define INCR(target, digit_char) \
+    target = target * 10 + digit_char - '0'
 
 typedef struct crate {
   char supply; // 0x00 will be the empty stack
   struct crate* bottom;
 } crate;
 
+typedef struct move {
+  short limit;
+  short from;
+  short to;
+} move;
+
 crate* push_crate(crate* bottom, char supply) {
   crate* new_crate = malloc(sizeof (crate));
   new_crate->supply = supply;
   new_crate->bottom = bottom;
   return new_crate;
+}
+
+char pop_crate(crate** stack) {
+  crate* old_top = *stack;
+  char supply = old_top->supply;
+  *stack = old_top->bottom;
+  return supply;
 }
 
 crate* invert_stack(crate* curr, crate* next) {
@@ -24,19 +41,6 @@ crate* invert_stack(crate* curr, crate* next) {
   return curr;
 }
 
-/**
- * [S]                 [T] [Q]        
- * [L]             [B] [M] [P]     [T]
- * [F]     [S]     [Z] [N] [S]     [R]
- * [Z] [R] [N]     [R] [D] [F]     [V]
- * [D] [Z] [H] [J] [W] [G] [W]     [G]
- * [B] [M] [C] [F] [H] [Z] [N] [R] [L]
- * [R] [B] [L] [C] [G] [J] [L] [Z] [C]
- * [H] [T] [Z] [S] [P] [V] [G] [M] [M]
- *  1   2   3   4   5   6   7   8   9 
- * 1234567890123456789012345678901234 <-- column number
- * 0         1         2         3
-*/
 void parse_and_fill_stacks(int stacksc, crate** stacks) {
   char ch;
   int column = 0;
@@ -54,16 +58,57 @@ void parse_and_fill_stacks(int stacksc, crate** stacks) {
       continue;
     }
 
+    // we reached the row w/ all the numbers on it
     if (ch >= '0' && ch <= '9') {
+      // read to end of line
+      while(read(STDIN_FILENO, &ch, 1) > 0) if (ch == '\n') break;
+      
+      // break out input loop
       break;
     }
   }
 
+  // we read the stacks top from bottom but set them up upsidw down using
+  // the bottom pointers, so now must invert them
   for (int i = 0; i < stacksc; i++) {
     stacks[i] = invert_stack(stacks[i], stacks[i]->bottom);
   }
 }
 
+move parse_next_move(int* iter_continue) {
+  char ch;
+  int offset = 0;
+
+  move next_move = {
+    limit:  0,
+    from:   0,
+    to:     0
+  };
+
+  while(read(STDIN_FILENO, &ch, 1) > 0) {
+    if (ch == 'f' /*from*/ || ch =='t' /*to*/) {
+      offset++;
+    }
+
+    if (ch >= '0' && ch <= '9') {
+      INCR(((short*)&next_move)[offset], ch);
+    }
+
+    if (ch == '\n') {
+      return next_move;
+    }
+  };
+
+  *iter_continue = 0;
+  return next_move;
+}
+
+void handle_next_move(move move, crate* stacks[]) {
+  for (int i = 0; i < move.limit; i++) {
+    char supply = pop_crate(&stacks[move.from-1]);
+    stacks[move.to-1] = push_crate(stacks[move.to-1], supply);
+  }
+}
 
 int main(int argc, char** argv) {
   crate* stacks[9]; // if there's more than 8 stacks I'll eat a lemon
@@ -71,8 +116,18 @@ int main(int argc, char** argv) {
     stacks[i] = malloc(sizeof (crate));
     stacks[i]->supply = EMPTY_STACK;
   }
-
   parse_and_fill_stacks(9, stacks);
+
+  int iter_continue = 1;
+  move next_move;
+  while (iter_continue) {
+    next_move = parse_next_move(&iter_continue);
+    handle_next_move(next_move, stacks);
+  }
+
+  for (int i = 0; i < 9; i++) {
+    printf("%c", stacks[i]->supply);
+  }
   return 0;
 
 }
