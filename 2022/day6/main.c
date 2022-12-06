@@ -81,7 +81,7 @@ void remove_oldest(sequence* sq) {
 // --------------------------------------------------------
 
 int main(int argc, char** argv) {
-  int seq_len = 4;
+  int seq_len = 14;
   char ch;
   int seq_offset;
   sequence sq = new_sequence(seq_len);
