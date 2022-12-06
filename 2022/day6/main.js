@@ -1,5 +1,5 @@
 const len = 14;
-const [_, r] = (
+console.log((
     x = require('fs').readFileSync('input.txt').toString().split(''), 
     x.reduce(([seq, found], curr, idx) => {
         if (seq.push(curr) < len+1) return [seq, found]
@@ -10,7 +10,6 @@ const [_, r] = (
             if (seq[i] == seq[j]) return [seq, found]
         
         x.splice(1)
-        return [seq, idx + 1]
+        return idx+1
     }, [[], -1])
-)
-console.log(r)
+))
