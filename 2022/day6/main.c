@@ -10,8 +10,6 @@ typedef struct queue {
   short*  vals;
 } queue;
 
-#define IS_Q_EMPTY(q) q->start_idx == q->end_idx
-
 queue new_queue(int size) {
   queue q;
   q.end_idx = 0;
@@ -87,9 +85,7 @@ int main(int argc, char** argv) {
   sequence sq = new_sequence(seq_len);
 
   while(read(STDIN_FILENO, &ch, 1) > 0) {
-
     insert(&sq, ch);
-
     if (sq.len == seq_len) {
       break;
     }
