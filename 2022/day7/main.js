@@ -8,7 +8,10 @@ lines.slice(1, lines.length)
 let dirs = newDir('/', null)
 let curr = dirs
 
+let allDirs = []
 let lilDirs = []
+
+
 
 function newDir(name, parent) {
   return {
@@ -43,6 +46,20 @@ console.log(
     .reduce(function(a,b) {return a + b})
 )
 
+allDirs = allDirs
+    .map(({ name, size }) => ({ name, size }))
+    .sort((a, b) => {
+      return (a.size - b.size)
+    })
+
+const total  = 70000000
+const targu  = 30000000
+const usedSize = dirs.size
+
+const delSize = usedSize - (total - targu)
+console.log({delSize, allDirs })
+const toDel = allDirs.find(({ size }) => size >= delSize)
+console.log({toDel})
 
 
 function command(line) {
@@ -97,4 +114,6 @@ function populateDirSizes(dir) {
   if (dir.size <= 100000) {
     lilDirs.push(dir)
   }
+
+  allDirs.push(dir)
 }
