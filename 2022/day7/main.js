@@ -11,8 +11,6 @@ let curr = dirs
 let allDirs = []
 let lilDirs = []
 
-
-
 function newDir(name, parent) {
   return {
     name,
@@ -60,7 +58,6 @@ const delSize = usedSize - (total - targu)
 const toDel = allDirs.find(({ size }) => size >= delSize)
 console.log(`part 2 ${toDel.size}`)
 
-
 function command(line) {
   const cmd = line.split(' ')[1]
   switch(cmd) {
@@ -95,7 +92,6 @@ function file(line) {
   size = Number(size)
   curr.files[name] = { size }
 }
-
 
 function populateDirSizes(dir) {
   for (let child of Object.values(dir.children)) {
