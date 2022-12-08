@@ -39,8 +39,8 @@ for (let line of lines) {
 }
 
 populateDirSizes(dirs)
-console.log(lilDirs)
 console.log(
+  'part 1 ' +
   lilDirs
     .map((({ size }) => size))
     .reduce(function(a,b) {return a + b})
@@ -57,9 +57,8 @@ const targu  = 30000000
 const usedSize = dirs.size
 
 const delSize = usedSize - (total - targu)
-console.log({delSize, allDirs })
 const toDel = allDirs.find(({ size }) => size >= delSize)
-console.log({toDel})
+console.log(`part 2 ${toDel.size}`)
 
 
 function command(line) {
@@ -94,17 +93,13 @@ function dir(line) {
 function file(line) {
   let [size, name] = line.split(' ')
   size = Number(size)
-  console.log({ size })
   curr.files[name] = { size }
 }
 
 
 function populateDirSizes(dir) {
   for (let child of Object.values(dir.children)) {
-    console.log('before' + child.size + ' ' + child.name)
-    console.log({ child })
     populateDirSizes(child)
-    console.log('after' + child.size + ' ' + child.name)
     dir.size += child.size
   } 
   for (let file of Object.values(dir.files)) {
