@@ -62,10 +62,76 @@ void insert_grid_val(buffered_grid_reader* br, char val) {
     if (br->grid_width == -1) {
       br->grid_width = br->total_size - 1;
     }
+    return;
   }
 
   short tree_height = val - '0';
   br->buffers[br->num_buffers-1][br->curr_buffer_offset++] = tree_height;
+}
+
+short** make_grid(buffered_grid_reader* br) {
+  int row = 0;
+  int col = 0;
+  short** result = malloc(br->grid_height * sizeof(short*));
+
+  for (int row = 0; row <= br->grid_height; row++) {
+    result[row] = malloc(br->grid_width * sizeof(short));
+  }
+
+  for (int buff = 0; buff < br->num_buffers; buff++) {
+    for (int i = 0; i < br->buffer_len; i++) {
+      result[row][col] = br->buffers[buff][i];
+      if (++col == br->grid_width) {
+        col = 0;
+        row++;
+      }
+    }
+  }
+
+  return result;
+}
+
+#define DO_TREE_STUFF(grid, row, col, dir_max, count)     \
+  short th = grid[row][col];          \
+  if (th < 0) th = th * -1 -1;        \
+  if (th > dir_max) {                 \
+    dir_max = th;                     \
+    if (grid[row][col] >= 0) count++; \
+    grid[row][col] = -1 * (th + 1);   \
+  }
+
+int count_visible_trees(short** grid, int width, int height) {
+  int count = 0;
+  int dir_max = -1;
+
+  // look from left & right
+  for (int row = 0; row < height; row++) {
+    // go in from the left -->
+    for (int col = 0; col < width; col++) {
+      DO_TREE_STUFF(grid, row, col, dir_max, count);
+    }
+    dir_max = -1;
+
+    // <-- go in from the right 
+    for (int col = width - 1; col >= 0; col--) {
+      DO_TREE_STUFF(grid, row, col, dir_max, count);
+    }
+    dir_max = -1;
+  }
+
+  // look from top & bottom
+  for (int col = 0; col < width; col++) {
+    for (int row = 0; row < height; row++) {
+      DO_TREE_STUFF(grid, row, col, dir_max, count);
+    }
+    dir_max = -1;
+
+    for (int row = height - 1; row >= 0; row--) {
+      DO_TREE_STUFF(grid, row, col, dir_max, count);
+    }
+    dir_max = -1;
+  }
+  return count;
 }
 
 int main() {
@@ -76,12 +142,10 @@ int main() {
     insert_grid_val(&br, ch);
   }
 
-  printf("grid height %d, width %d, total_size %d, num_buffers %d, num_aloc_buffers %d",
-    br.grid_height,
-    br.grid_width,
-    br.total_size,
-    br.num_buffers,
-    br.num_alloc_buffers
-  );
+  short** grid = make_grid(&br);
+  int count = count_visible_trees(grid, br.grid_width, br.grid_height);
+
+  printf("part 1 = %d", count);
+  return 0;
 
 }
