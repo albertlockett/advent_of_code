@@ -1,0 +1,16 @@
+{
+    "configurations": [
+    {
+        "name": "day 8 (lldb) Launch",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/main",
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${fileDirname}",
+        "environment": [],
+        "externalConsole": true,
+        "MIMode": "lldb",
+    }
+    ]
+}
