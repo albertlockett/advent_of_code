@@ -134,6 +134,60 @@ int count_visible_trees(short** grid, int width, int height) {
   return count;
 }
 
+int find_scenic_score(short** grid, int width, int height, int row, int col) {
+  short tree_height = grid[row][col];
+
+  int right = 0;
+  for (int i = col + 1; i < width; i++) {
+    right++;
+    if (grid[row][i] >= tree_height) {
+      break;
+    }
+  }
+
+  int left = 0;
+  for (int i = col - 1; i >= 0; i--) {
+    left++;
+    if (grid[row][i] >= tree_height) {
+      break;
+    }
+  }
+
+  int down = 0;
+  for (int i = row + 1; i < height; i++) {
+    down++;
+    if (grid[i][col] >= tree_height) {
+      break;
+    }
+  }
+
+  int up = 0;
+  for (int i = row - 1; i >= 0; i--) {
+    up++;
+    if (grid[i][col] >= tree_height) {
+      break;
+    }
+  }
+  int score = left * right * up * down;
+  printf("row=%d, col=%d, th=%d, left=%d, right=%d, up=%d, down=%d, score=%d\n",
+    row, col, tree_height, left, right, up, down, score
+  );
+  return score;
+}
+
+int find_highest_scenic_score(short** grid, int width, int height) {
+  int high_score = -1;
+  for (int row = 0; row < height; row++) {
+    for (int col = 0; col < width; col++) {
+      int score = find_scenic_score(grid, width, height, row, col);
+      if (score > high_score) {
+        high_score = score;
+      }
+    }
+  }
+  return high_score;
+}
+
 int main() {
   buffered_grid_reader br = new_buff_reader(10); // TODO this is arbitrary
 
@@ -143,9 +197,11 @@ int main() {
   }
 
   short** grid = make_grid(&br);
+  int score = find_highest_scenic_score(grid, br.grid_width, br.grid_height);
   int count = count_visible_trees(grid, br.grid_width, br.grid_height);
 
-  printf("part 1 = %d", count);
+  printf("part 1 = %d\n", count);
+  printf("part 2 = %d\n", score);
   return 0;
 
 }
