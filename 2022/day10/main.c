@@ -89,10 +89,26 @@ int main() {
   int reg_x = 1;
   int signals = 0;
 
+  printf("part 2 ...\n");
   do {
     inst = parse_next_instruction();
     for (int i = 0; i < inst.inst_len; i++) {
+      int x_pos = cycle_count % 40;
+      
+      if (
+        reg_x-1 == x_pos ||
+        reg_x+0 == x_pos ||
+        reg_x+1 == x_pos
+      ) {
+        printf("#");
+      } else {
+        printf(".");
+      }
       cycle_count++;
+      if (cycle_count % 40 == 0) {
+        printf("\n");
+      }
+
       if ((cycle_count - 20 )% 40 == 0) {
         signals += cycle_count * reg_x;
       }
@@ -100,5 +116,5 @@ int main() {
     reg_x += inst.val;
   } while(inst.opcode != OP_END);
 
-  printf("%d", signals);
+  printf("\npart 1 = %d", signals);
 }
