@@ -69,6 +69,82 @@ kway_node* insert(kway_tree* tree, kway_node* node, short* values, short level) 
   return node;
 }
 
+#define U 'U'
+#define D 'D'
+#define L 'L'
+#define R 'R'
+
+typedef struct vector {
+  short diretion;
+  short magnitude;
+} vector;
+
+#define INCR(target, digit_char) \
+    target = target * 10 + digit_char - '0'
+
+vector parse_next_movement() {
+  vector mv;
+  mv.magnitude = -1;
+
+  char ch;
+  while (read(STDIN_FILENO, &ch, 1) > 0) {
+    if (U == ch || D == ch || R == ch || L == ch) {
+      mv.diretion = ch;
+      continue;
+    }
+
+    if (' ' == ch) {
+      continue;
+    }
+
+    if (ch >= '0' && ch <= '9') {
+      INCR(mv.magnitude, ch);
+      continue;
+    }
+
+    if (ch == '\n') {
+      break;
+    }
+  }
+
+  return mv;
+}
+
+void move_head(short* head, vector* move) {
+  switch (move->diretion) {
+    case U:
+      head[0] += move->diretion;
+      break;
+    case D:
+      head[0] -= move->diretion;
+      break;
+    case L:
+      head[1] += move->diretion;
+      break;
+    case R:
+      head[1] -= move->diretion;
+      break;
+  }
+}
+
+void move_tail(short* head, short* tail) {
+  // TODO
+}
+
 int main() {
+  short head[2];
+  head[0] = 0;
+  head[1] = 0;
+
+  short tail_pos[2];
+  tail_pos[0] = 0;
+  tail_pos[1] = 0;
+
+  vector move;
+  do {
+    move_head(head, &move);
+
+  } while(move.magnitude > 0);
+
   return 0;
 }
