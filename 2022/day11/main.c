@@ -50,7 +50,7 @@ void push(ring_buffer* rb, item wl) {
 }
 
 item pop(ring_buffer* rb) {
-  if (rb->size == 0) {
+  if (rb-= 0) {
     return EMPTY_ITEM;
   }
 
