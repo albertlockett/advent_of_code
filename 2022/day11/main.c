@@ -26,14 +26,14 @@ ring_buffer new_ring_buffer() {
 
 void grow_ring_buffer(ring_buffer* rb) {
   rb->max_size *= 2;
-  item* new_buffer = malloc(rb->max_size);
+  item* new_buffer = malloc(rb->max_size * sizeof(item));
   for (int i = 0; i < rb->size; i++) {
     new_buffer[i] = rb->buffer[(i + rb->start) % rb->size];
   }
   free(rb->buffer);
   rb->buffer = new_buffer;
   rb->start = 0;
-  rb->end = rb->size -1;
+  rb->end = rb->size - 1;
 }
 
 void push(ring_buffer* rb, item wl) {
@@ -50,7 +50,7 @@ void push(ring_buffer* rb, item wl) {
 }
 
 item pop(ring_buffer* rb) {
-  if (rb-= 0) {
+  if (rb->size == 0) {
     return EMPTY_ITEM;
   }
 
@@ -84,11 +84,7 @@ typedef struct monkey {
 } monkey;
 
 
-item transform(worry_transform* transform, item wl) {
-  return transform->op == OP_PLUS 
-      ? wl + transform->level 
-      : wl * transform->level;
-}
+
 
 void parse_to(char c) {
   char ch;
@@ -112,6 +108,7 @@ void parse_items_list(monkey* m) {
       value = 0;
     }
     if (ch == '\n') {
+      push(&m->items, value);
       return;
     }
   }
@@ -136,7 +133,7 @@ void parse_tranform(monkey* m) {
   m->transform.self = 0;
   while(read(STDIN_FILENO, &ch, 1) > 0) {
     if (ch == 'o') {
-      parse_to('\n');
+      parse_to('d');
       m->transform.self = 1;
     }
     
@@ -167,6 +164,7 @@ int parse_number_after_letter_y() {
 monkey parse_monkey() {
   monkey m;
   m.items = new_ring_buffer();
+  m.count_inspected = 0;
 
   parse_to('\n'); // parse title
   parse_to(':');  // parse to : before list of items
@@ -180,13 +178,21 @@ monkey parse_monkey() {
   return m;
 }
 
-
+item transform(worry_transform* transform, item wl) {
+  int target = transform->level;
+  if (transform->self) {
+    target = wl;
+  }
+  return transform->op == OP_PLUS 
+      ? wl + target 
+      : wl * target;
+}
 
 int main() {
   int rounds = 20;
   
   // TODO hardcode number of the monkeys?
-  int num_monkeys = 7;
+  int num_monkeys = 8;
   monkey monkeys[num_monkeys];
 
   for (int i = 0; i < num_monkeys; i++) {
@@ -205,13 +211,24 @@ int main() {
         if (wl % monkeys[m].mod) {
           target = monkeys[m].fail_target;
         }
-
         push(&monkeys[target].items, wl);
       }
     }
   }
 
-  // TODO find the monkeys with the most items inspected
+  int top = 0;
+  int top2 = 0;
+  for (int i = 0; i < num_monkeys; i++) {
+    if (monkeys[i].count_inspected > top) {
+      top2 = top;
+      top = monkeys[i].count_inspected;
+      continue;
+    }
+    if (monkeys[i].count_inspected > top2) {
+      top2 = monkeys[i].count_inspected;
+    }
+  }
 
+  printf("part 1 = %d\n", top * top2);
   return 0;
 }
