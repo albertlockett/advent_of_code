@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "2023-day01-normal",
+            "cargo": {
+                "args": [
+                    "build",
+                ]
+            },
+            "cwd": "${workspaceFolder}",
+        }
+    ]
+}
