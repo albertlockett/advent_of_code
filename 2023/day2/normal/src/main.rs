@@ -10,20 +10,24 @@ fn main() -> std::io::Result<()> {
     let max_g = 13;
     let max_b = 14;
 
-    let result: u64 = contents
+    let p1_result: u64 = contents
         .split("\n")
         .into_iter()
-        .filter_map(|line| {
-            let g = Game::new(line);
-            if g.is_possible(max_r, max_b, max_g) {
-                Some(g.id)
-            } else {
-                None
-            }
-        })
+        .map(Game::new)
+        .filter(|game| game.is_possible(max_r, max_b, max_g))
+        .map(|game| game.id)
         .sum();
 
-    println!("The result is {:?}\n", result);
+    println!("The result for part 1 is {:?}", p1_result);
+
+
+    let p2_result: u64 = contents.split("\n")
+        .into_iter()
+        .map(Game::new)
+        .map(|game| game.power())
+        .sum();
+
+    println!("The result for part 2 is {:?}", p2_result);
 
     Ok(())
 }
@@ -102,6 +106,26 @@ impl Game {
 
         true
     }
+
+    fn power(&self) -> u64 {
+        let mut max_b = 0;
+        let mut max_g = 0;
+        let mut max_r: u16 = 0;
+
+        for trial in &self.trials {
+            if trial.r > max_r {
+                max_r = trial.r;
+            }
+            if trial.b > max_b {
+                max_b = trial.b
+            }
+            if trial.g > max_g {
+                max_g = trial.g
+            }
+        }; 
+
+        return max_b as u64 * max_g as u64 * max_r as u64;
+    }
 }
 
 
@@ -111,4 +135,12 @@ fn test_parse_game() {
     let g = Game::new(line);
     assert!(g.id == 1);
     assert!(g.trials.len() == 3);
+}
+
+#[test]
+fn test_power() {
+    let line = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
+    let g = Game::new(line);
+
+    assert!(g.power() == 48);
 }
