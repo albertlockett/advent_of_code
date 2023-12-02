@@ -34,35 +34,37 @@ const lines = values.split('\n')
 let totalScore = 0
 
 for(line of lines) {
-    const starts = {}
-    const contains = {}
+    const starts = [] 
+    const contains = []
+
     let first = ''
 
     const chars = line.split('')
     for (let i in chars) {
         const letter = chars[i]
 
-        for(let [word, num] of candidates) {
+        for(let j in candidates) {
+            let [word] = candidates[j]
+
             if (letter === word[0]) {
-                if (word === "nine" && starts[word] == i - 2) {
+                if (word === "nine" && starts[j] == i - 2) {
                 // handle special case of fucking 9
                 } else {
-                    starts[word] = i
-                    // continue
+                    starts[j] = i
                 }
             }
 
-            if (starts[word]) {
-                if (i - starts[word] === word.length - 1) {
+            if (starts[j]) {
+                if (i - starts[j] === word.length - 1) {
                     if (letter == word[word.length -1]) {
                         if (Object.keys(contains).length === 0) {
-                            first = word
+                            first = j
                         }
-                        contains[word] = starts[word]
+                        contains[j] = starts[j]
                     }
                 }
-                if (letter != word[i - starts[word]]) {
-                    delete starts[word]
+                if (letter != word[i - starts[j]]) {
+                    delete starts[j]
                 }
                 
             
@@ -81,10 +83,7 @@ for(line of lines) {
         }
     }
 
-    const first_as_num = candidates.find(([ word ]) => word === first)[1]
-    const last_as_num = candidates.find(([ word ]) => word === last)[1]
-
-    const score = first_as_num * 10 +  last_as_num
+    const score = candidates[first][1] * 10 +  candidates[last][1]
 
     totalScore += score
 }
