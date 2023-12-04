@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
+use std::ops::AddAssign;
 
 struct Card {
     win_nums: HashSet<u8>,
@@ -74,28 +75,28 @@ fn test_to_num_set() {
     assert!(result.len() == 8);
 }
 
-struct CardCount {
-    counts: Vec<u64>,
+struct CardCount<T> {
+    counts: Vec<T>,
 }
 
-impl CardCount {
+impl <T: AddAssign + Default + Copy> CardCount<T> {
     fn new() -> Self {
         CardCount { counts: vec![] }
     }
 
-    fn add_at_idx(&mut self, idx: usize, count: u64) {
+    fn add_at_idx(&mut self, idx: usize, count: T) {
         while idx + 1 > self.counts.len() {
-            self.counts.push(0);
+            self.counts.push(T::default());
         }
         self.counts[idx] += count;
     }
 
-    fn get_count(&self, idx: usize) -> u64 {
+    fn get_count(&self, idx: usize) -> T {
         return self.counts[idx];
     }
 
-    fn into_vec(self, end: usize) -> Vec<u64> {
-        self.counts.into_iter().take(end).collect::<Vec<u64>>()
+    fn into_vec(self, end: usize) -> Vec<T> {
+        self.counts.into_iter().take(end).collect::<Vec<T>>()
     }
 }
 
