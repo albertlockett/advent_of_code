@@ -1,4 +1,3 @@
-
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
@@ -10,7 +9,6 @@ struct Card {
 
 impl Card {
     fn new(line: &str) -> Self {
-
         let mut prefix_iter = line.split(":").into_iter();
         prefix_iter.next();
 
@@ -29,15 +27,18 @@ impl Card {
         }
     }
 
-    fn p1_score(&self) -> u64 {
-        self.win_nums.intersection(&self.card_nums).for_each(|f| println!("INTERSECT {}", f));
-        let intersection_size = self.win_nums.intersection(&self.card_nums).count();
+    fn score(&self) -> u64 {
+        let intersection_size = self.num_intersect();
         if intersection_size == 0 {
-            return 0
+            return 0;
         }
 
         let base: u64 = 2;
         base.pow((intersection_size - 1) as u32)
+    }
+
+    fn num_intersect(&self) -> u32 {
+        self.win_nums.intersection(&self.card_nums).count() as u32
     }
 }
 
@@ -47,11 +48,13 @@ fn test_card() {
     let card = Card::new(&line);
     assert_eq!(card.win_nums.len(), 5);
     assert_eq!(card.card_nums.len(), 8);
-    assert_eq!(card.p1_score(), 8);
+    assert_eq!(card.score(), 8);
 }
 
 fn to_num_set(nums_raw: &str) -> HashSet<u8> {
-    let result = nums_raw.split(" ").into_iter()
+    let result = nums_raw
+        .split(" ")
+        .into_iter()
         .filter_map(|sec| {
             if sec.len() > 0 {
                 Some(sec.parse::<u8>().unwrap())
@@ -71,18 +74,62 @@ fn test_to_num_set() {
     assert!(result.len() == 8);
 }
 
+struct CardCount {
+    counts: Vec<u64>,
+}
+
+impl CardCount {
+    fn new() -> Self {
+        CardCount { counts: vec![] }
+    }
+
+    fn add_at_idx(&mut self, idx: usize, count: u64) {
+        while idx + 1 > self.counts.len() {
+            self.counts.push(0);
+        }
+        self.counts[idx] += count;
+    }
+
+    fn get_count(&self, idx: usize) -> u64 {
+        return self.counts[idx];
+    }
+
+    fn into_vec(self, end: usize) -> Vec<u64> {
+        self.counts.into_iter().take(end).collect::<Vec<u64>>()
+    }
+}
+
 fn main() -> std::io::Result<()> {
     let mut file = File::open("input.txt")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 
-    let p1_result: u64 = contents.split("\n")
+    let cards = contents
+        .split("\n")
         .into_iter()
         .map(Card::new)
-        .map(|card| card.p1_score())
-        .sum();
+        .collect::<Vec<_>>();
+
+    let p1_result: u64 = cards.iter().map(|card| card.score()).sum();
 
     println!("results of part 1 = {:?}", p1_result);
+
+    let mut card_counts = CardCount::new();
+    for i in 0..cards.len() {
+        // add the count for the original
+        card_counts.add_at_idx(i, 1);
+
+        let num_matches = cards[i].num_intersect() as usize;
+        if num_matches > 0 {
+            for j in 0..num_matches {
+                card_counts.add_at_idx(i + j + 1, card_counts.get_count(i));
+            }
+        }
+    }
+
+    let card_count = card_counts.into_vec(cards.len());
+    let p2_total: u64 = card_count.iter().sum();
+    println!("results of part 2 = {:?}", p2_total);
 
     Ok(())
 }
