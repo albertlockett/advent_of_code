@@ -16,15 +16,9 @@ impl Card {
         let number_section = prefix_iter.next().unwrap();
         let mut num_sec_iter = number_section.split("|").into_iter();
 
-        let win_nums_sec = num_sec_iter.next().unwrap();
-        let card_nums_sec = num_sec_iter.next().unwrap();
-
-        let win_nums = to_num_set(win_nums_sec);
-        let card_nums = to_num_set(card_nums_sec);
-
         Card {
-            win_nums,
-            card_nums,
+            win_nums: to_num_set(num_sec_iter.next().unwrap()),
+            card_nums: to_num_set(num_sec_iter.next().unwrap())
         }
     }
 
