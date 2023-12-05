@@ -18,7 +18,7 @@ fn main() -> std::io::Result<()> {
         .map(|segment| CategoryMap::new(segment))
         .collect::<Vec<CategoryMap<u64>>>();
 
-    // part 1 ... 
+    // part 1 ...
     let seeds = parse_seeds(seeds_raw);
     let mut final_dests = vec![];
     for seed in seeds {
@@ -32,11 +32,10 @@ fn main() -> std::io::Result<()> {
             }
         }
         final_dests.push(src);
-    };
+    }
 
     let result = final_dests.into_iter().min().unwrap();
     println!("results p1: {:?}", result);
-
 
     // part 2 ...
     let seeds = parse_seeds_as_ranges(seeds_raw);
@@ -51,12 +50,12 @@ fn main() -> std::io::Result<()> {
 
             // iterate through the ranges
             for range in &category_map.ranges {
-
                 // this will hold seed ranges that weren't mapped
                 let mut nxt_src_ranges = vec![];
-                
+
                 for src_range in src_ranges {
-                    let (in_range, out_range, outer_range_2) = range.to_dst_range(src_range.0, src_range.1);
+                    let (in_range, out_range, outer_range_2) =
+                        range.to_dst_range(src_range.0, src_range.1);
                     if in_range.is_some() {
                         dst_ranges.push(in_range.unwrap());
                     }
@@ -91,7 +90,6 @@ fn main() -> std::io::Result<()> {
         .min();
 
     println!("results p2: {:?}", result);
-
 
     Ok(())
 }
@@ -133,7 +131,11 @@ where
     // mapped range for sectino of argument range that overlaps with current rnage
     // possibly 2 other ranges for parts of the argument range that don't overlap
     // this source range
-    fn to_dst_range(&self, start: T, length: T) -> (Option<(T, T)>, Option<(T, T)>, Option<(T, T)>) {
+    fn to_dst_range(
+        &self,
+        start: T,
+        length: T,
+    ) -> (Option<(T, T)>, Option<(T, T)>, Option<(T, T)>) {
         if start < self.src_start {
             let end = start + length;
 
@@ -142,42 +144,28 @@ where
                 return (None, Some((start, length)), None);
             }
 
-            let lower_range = (
-                start,
-                self.src_start - start
-            );
+            let lower_range = (start, self.src_start - start);
 
             // range extends both sides of self range
             if end > self.src_start + self.length {
-                let middle_range = (
-                    self.to_dst(self.src_start),
-                    self.length
-                );
+                let middle_range = (self.to_dst(self.src_start), self.length);
 
                 let upper_range = (
                     self.src_start + self.length,
-                    end - self.src_start - self.length
+                    end - self.src_start - self.length,
                 );
 
                 return (Some(middle_range), Some(lower_range), Some(upper_range));
             }
 
             // range starts lower and overlaps with self range
-            let upper_range = (
-                self.to_dst(self.src_start),
-                length - lower_range.1
-            );
+            let upper_range = (self.to_dst(self.src_start), length - lower_range.1);
 
             return (Some(upper_range), Some(lower_range), None);
-
-
         } else if start + length <= self.src_start + self.length {
             // range is contained by self range
-            let lower_range = (
-                self.to_dst(start),
-                length
-            );
-            
+            let lower_range = (self.to_dst(start), length);
+
             return (Some(lower_range), None, None);
         } else {
             let self_end = self.src_start + self.length;
@@ -188,14 +176,8 @@ where
             }
 
             // range starts greater than self range start and overlaps
-            let lower_range = (
-                self.to_dst(start),
-                self_end - start
-            );
-            let upper_range = (
-                self_end,
-                length - lower_range.1
-            );
+            let lower_range = (self.to_dst(start), self_end - start);
+            let upper_range = (self_end, length - lower_range.1);
             return (Some(lower_range), Some(upper_range), None);
         }
     }
@@ -221,20 +203,28 @@ fn test_range() {
     let range: Range<u32> = Range::new(input);
     assert_eq!(range.to_dst_range(9, 1), (None, Some((9, 1)), None));
     assert_eq!(range.to_dst_range(10, 1), (Some((20, 1)), None, None));
-    assert_eq!(range.to_dst_range(10, 4), (Some((20, 4)), None, None)); 
+    assert_eq!(range.to_dst_range(10, 4), (Some((20, 4)), None, None));
     assert_eq!(range.to_dst_range(11, 3), (Some((21, 3)), None, None));
-    assert_eq!(range.to_dst_range(8, 4), (Some((20, 2)), Some((8, 2)), None));
-    assert_eq!(range.to_dst_range(13, 6), (Some((23, 2)), Some((15, 4)), None));
+    assert_eq!(
+        range.to_dst_range(8, 4),
+        (Some((20, 2)), Some((8, 2)), None)
+    );
+    assert_eq!(
+        range.to_dst_range(13, 6),
+        (Some((23, 2)), Some((15, 4)), None)
+    );
     assert_eq!(range.to_dst_range(14, 1), (Some((24, 1)), None, None));
-    assert_eq!(range.to_dst_range(14, 2), (Some((24, 1)), Some((15, 1)), None));
+    assert_eq!(
+        range.to_dst_range(14, 2),
+        (Some((24, 1)), Some((15, 1)), None)
+    );
     assert_eq!(range.to_dst_range(16, 2), (None, Some((16, 2)), None));
     assert_eq!(range.to_dst_range(15, 2), (None, Some((15, 2)), None));
 
-    assert_eq!(range.to_dst_range(9, 20), (
-        Some((20, 5)),
-        Some((9, 1)),
-        Some((15, 14))
-    ));
+    assert_eq!(
+        range.to_dst_range(9, 20),
+        (Some((20, 5)), Some((9, 1)), Some((15, 14)))
+    );
 }
 
 struct CategoryMap<T> {
@@ -281,7 +271,11 @@ fn test_new_category_map() {
     assert_eq!(category_map.ranges.len(), 2);
 }
 
-fn parse_seeds<T>(raw: &str) -> Vec<T> where T: FromStr, <T as FromStr>::Err: Debug {
+fn parse_seeds<T>(raw: &str) -> Vec<T>
+where
+    T: FromStr,
+    <T as FromStr>::Err: Debug,
+{
     let nums_raw = raw.split(":").into_iter().skip(1).next().unwrap().trim();
     let result = nums_raw
         .split(" ")
@@ -299,12 +293,13 @@ fn test_parse_seeds() {
     assert_eq!(vec![79, 14, 55, 13], result);
 }
 
-fn parse_seeds_as_ranges<T>(raw: &str) -> Vec<(T, T)> where T: FromStr, <T as FromStr>::Err: Debug {
+fn parse_seeds_as_ranges<T>(raw: &str) -> Vec<(T, T)>
+where
+    T: FromStr,
+    <T as FromStr>::Err: Debug,
+{
     let nums_raw = raw.split(":").into_iter().skip(1).next().unwrap().trim();
-    let mut nums_iter = nums_raw
-    .split(" ")
-    .into_iter()
-    .peekable();
+    let mut nums_iter = nums_raw.split(" ").into_iter().peekable();
 
     let mut result = vec![];
 
@@ -323,9 +318,8 @@ fn test_parse_seeds_as_ranges() {
     assert_eq!(vec![(79, 14), (55, 13)], result);
 }
 
-
 fn dedupe_ranges<T: Debug>(ranges: Vec<(T, T)>) -> Vec<(T, T)> {
-    let mut contains: HashSet<String>= HashSet::new();
+    let mut contains: HashSet<String> = HashSet::new();
     let mut results = vec![];
 
     for range in ranges {
