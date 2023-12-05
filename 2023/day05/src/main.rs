@@ -129,6 +129,10 @@ where
         src - self.src_start + self.dst_start
     }
 
+    // will return 3 ranges:
+    // mapped range for sectino of argument range that overlaps with current rnage
+    // possibly 2 other ranges for parts of the argument range that don't overlap
+    // this source range
     fn to_dst_range(&self, start: T, length: T) -> (Option<(T, T)>, Option<(T, T)>, Option<(T, T)>) {
         if start < self.src_start {
             let end = start + length;
