@@ -7,7 +7,7 @@ use std::ops::{Add, Sub};
 use std::str::FromStr;
 
 fn main() -> std::io::Result<()> {
-    let mut file = File::open("./input_test.txt")?;
+    let mut file = File::open("./input.txt")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 
@@ -41,31 +41,37 @@ fn main() -> std::io::Result<()> {
     // part 2 ...
     let seeds = parse_seeds_as_ranges(seeds_raw);
     let mut final_dests = vec![];
+
     for seed_range in seeds {
         let mut src_ranges = vec![seed_range];
         for category_map in &category_maps {
             let mut dst_ranges = vec![];
             for range in &category_map.ranges {
-                for (range_start, range_len) in &src_ranges {
-                    let (range_1, range_2) = range.to_dst_range(*range_start, *range_len);
-                    dst_ranges.push(range_1);
-                    if range_2.is_some() {
-                        dst_ranges.push(range_2.unwrap());
+                let mut nxt_src_ranges = vec![];
+                
+                for src_range in src_ranges {
+                    let (in_range, out_range, outer_range_2) = range.to_dst_range(src_range.0, src_range.1);
+                    if in_range.is_some() {
+                        dst_ranges.push(in_range.unwrap());
+                    }
+                    if out_range.is_some() {
+                        nxt_src_ranges.push(out_range.unwrap());
+                    }
+                    if outer_range_2.is_some() {
+                        nxt_src_ranges.push(outer_range_2.unwrap());
                     }
                 }
-            }
-            if dst_ranges.len() == 0 {
-                break;
+                src_ranges = nxt_src_ranges;
             }
             dst_ranges = dedupe_ranges(dst_ranges);
-            src_ranges = dst_ranges;
+            src_ranges.extend(dst_ranges);
         }
         final_dests.push(src_ranges)
     }
 
     let result = final_dests
         .iter()
-        .map(|ranges| ranges.into_iter().map(|(start, _)| start).filter(|x| **x as u128 > 0).min().unwrap())
+        .map(|ranges| ranges.into_iter().map(|(start, _)| start).min().unwrap())
         .min();
 
     println!("results p2: {:?}", result);
@@ -107,57 +113,49 @@ where
         src - self.src_start + self.dst_start
     }
 
-    fn min_src_for_range(&self, start: T, length: T) -> Option<T> {
-        if start >= self.src_start && start < (self.src_start + self.length) {
-            Some(start)
-        } else if self.src_start >= start && self.src_start < (start + length) {
-            Some(self.src_start)
-        } else {
-            None
-        }
-    }
-
-    fn max_src_for_range(&self, start: T, length: T) -> Option<T> {
-        let end = start + length;
-        let self_end = self.src_start + self.length;
-        if end >= self.src_start && end < self_end {
-            Some(end)
-        } else if self_end >= start && self_end < end {
-            Some(self_end)
-        } else {
-            None
-        }
-    }
-
-    fn to_dst_range(&self, start: T, length: T) -> ((T, T), Option<(T, T)>) {
+    fn to_dst_range(&self, start: T, length: T) -> (Option<(T, T)>, Option<(T, T)>, Option<(T, T)>) {
         if start < self.src_start {
             let end = start + length;
             if end <= self.src_start {
-                return ((start, length), None);
+                return (None, Some((start, length)), None);
             }
 
             let lower_range = (
                 start,
                 self.src_start - start
             );
-            println!("lower_range: {:?}, self = {:?}, start = {:?} len = {:?}", lower_range, self, start, length);
+
+            if end > self.src_start + self.length {
+                let middle_range = (
+                    self.to_dst(self.src_start),
+                    self.length
+                );
+
+                let upper_range = (
+                    self.src_start + self.length,
+                    end - self.src_start - self.length
+                );
+
+                return (Some(middle_range), Some(lower_range), Some(upper_range));
+            }
+
             let upper_range = (
                 self.to_dst(self.src_start),
                 length - lower_range.1
             );
 
-            return (lower_range, Some(upper_range));
+            return (Some(upper_range), Some(lower_range), None);
         } else if start + length <= self.src_start + self.length {
             let lower_range = (
                 self.to_dst(start),
                 length
             );
             
-            return (lower_range, None);
+            return (Some(lower_range), None, None);
         } else {
             let self_end = self.src_start + self.length;
             if start >= self_end {
-                return ((start, length), None);
+                return (None, Some((start, length)), None);
             }
             let lower_range = (
                 self.to_dst(start),
@@ -167,7 +165,7 @@ where
                 self_end,
                 length - lower_range.1
             );
-            return (lower_range, Some(upper_range));
+            return (Some(lower_range), Some(upper_range), None);
         }
     }
 }
@@ -199,13 +197,22 @@ fn test_range() {
 
     let input = "20 10 5";
     let range: Range<u32> = Range::new(input);
-    // assert_eq!(range.to_dst_range(9, 1), ((9, 1), None));
-    // assert_eq!(range.to_dst_range(10, 1), ((20, 1), None));
-    // assert_eq!(range.to_dst_range(11, 3), ((21, 3), None));
-    // assert_eq!(range.to_dst_range(8, 4), ((8, 2), Some((20, 2))));
-    // assert_eq!(range.to_dst_range(13, 6), ((23, 2), Some((15, 4))));
-    assert_eq!(range.to_dst_range(14, 1), ((24, 1), None));
-    assert_eq!(range.to_dst_range(14, 2), ((24, 1), Some((15, 1))));
+    // assert_eq!(range.to_dst_range(9, 1), (None, Some((9, 1))));
+    // assert_eq!(range.to_dst_range(10, 1), (Some((20, 1)), None));
+    // assert_eq!(range.to_dst_range(10, 4), (Some((20, 4)), None)); 
+    // assert_eq!(range.to_dst_range(11, 3), (Some((21, 3)), None));
+    // assert_eq!(range.to_dst_range(8, 4), (Some((20, 2)), Some((8, 2))));
+    // assert_eq!(range.to_dst_range(13, 6), (Some((23, 2)), Some((15, 4))));
+    // assert_eq!(range.to_dst_range(14, 1), (Some((24, 1)), None));
+    // assert_eq!(range.to_dst_range(14, 2), (Some((24, 1)), Some((15, 1))));
+    // assert_eq!(range.to_dst_range(16, 2), (None, Some((16, 2))));
+    // assert_eq!(range.to_dst_range(15, 2), (None, Some((15, 2))));
+
+    assert_eq!(range.to_dst_range(9, 20), (
+        Some((20, 5)),
+        Some((9, 1)),
+        Some((15, 14))
+    ));
 }
 
 struct CategoryMap<T> {
