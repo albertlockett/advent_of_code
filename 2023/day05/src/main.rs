@@ -44,9 +44,15 @@ fn main() -> std::io::Result<()> {
 
     for seed_range in seeds {
         let mut src_ranges = vec![seed_range];
+
+        // iterate thru each category map
         for category_map in &category_maps {
-            let mut dst_ranges = vec![];
+            let mut dst_ranges = vec![]; // these are destinations we've mapped
+
+            // iterate through the ranges
             for range in &category_map.ranges {
+
+                // this will hold seed ranges that weren't mapped
                 let mut nxt_src_ranges = vec![];
                 
                 for src_range in src_ranges {
@@ -54,6 +60,9 @@ fn main() -> std::io::Result<()> {
                     if in_range.is_some() {
                         dst_ranges.push(in_range.unwrap());
                     }
+
+                    // if there's a range that wasn't mapped, we'll need to keep it
+                    // for the next range
                     if out_range.is_some() {
                         nxt_src_ranges.push(out_range.unwrap());
                     }
@@ -61,14 +70,21 @@ fn main() -> std::io::Result<()> {
                         nxt_src_ranges.push(outer_range_2.unwrap());
                     }
                 }
+
                 src_ranges = nxt_src_ranges;
             }
+
+            // dedupe the ranges (maybe not necessary)
             dst_ranges = dedupe_ranges(dst_ranges);
+
+            // pass any unmapped ranges + mapped ranges to next category
             src_ranges.extend(dst_ranges);
         }
+
         final_dests.push(src_ranges)
     }
 
+    // scan results to find min
     let result = final_dests
         .iter()
         .map(|ranges| ranges.into_iter().map(|(start, _)| start).min().unwrap())
@@ -116,6 +132,8 @@ where
     fn to_dst_range(&self, start: T, length: T) -> (Option<(T, T)>, Option<(T, T)>, Option<(T, T)>) {
         if start < self.src_start {
             let end = start + length;
+
+            // range starts lower than self range and doesn't overlap
             if end <= self.src_start {
                 return (None, Some((start, length)), None);
             }
@@ -125,6 +143,7 @@ where
                 self.src_start - start
             );
 
+            // range extends both sides of self range
             if end > self.src_start + self.length {
                 let middle_range = (
                     self.to_dst(self.src_start),
@@ -139,13 +158,17 @@ where
                 return (Some(middle_range), Some(lower_range), Some(upper_range));
             }
 
+            // range starts lower and overlaps with self range
             let upper_range = (
                 self.to_dst(self.src_start),
                 length - lower_range.1
             );
 
             return (Some(upper_range), Some(lower_range), None);
+
+
         } else if start + length <= self.src_start + self.length {
+            // range is contained by self range
             let lower_range = (
                 self.to_dst(start),
                 length
@@ -154,9 +177,13 @@ where
             return (Some(lower_range), None, None);
         } else {
             let self_end = self.src_start + self.length;
+
+            // range starts greater than self range start and doesn't overlap
             if start >= self_end {
                 return (None, Some((start, length)), None);
             }
+
+            // range starts greater than self range start and overlaps
             let lower_range = (
                 self.to_dst(start),
                 self_end - start
@@ -186,27 +213,18 @@ fn test_range() {
     assert_eq!(range.to_dst(98), 50);
     assert_eq!(range.to_dst(99), 51);
 
-    // assert_eq!(range.min_src_for_range(49, 2), None);
-    // assert_eq!(range.min_src_for_range(98, 100), Some(98));
-    // assert_eq!(range.min_src_for_range(99, 100), Some(99));
-    // assert_eq!(range.min_src_for_range(100, 100), None);
-    // assert_eq!(range.min_src_for_range(97, 100), Some(98));
-
-    // TODO test maxs
-    // TODO test to_dst_range
-
     let input = "20 10 5";
     let range: Range<u32> = Range::new(input);
-    // assert_eq!(range.to_dst_range(9, 1), (None, Some((9, 1))));
-    // assert_eq!(range.to_dst_range(10, 1), (Some((20, 1)), None));
-    // assert_eq!(range.to_dst_range(10, 4), (Some((20, 4)), None)); 
-    // assert_eq!(range.to_dst_range(11, 3), (Some((21, 3)), None));
-    // assert_eq!(range.to_dst_range(8, 4), (Some((20, 2)), Some((8, 2))));
-    // assert_eq!(range.to_dst_range(13, 6), (Some((23, 2)), Some((15, 4))));
-    // assert_eq!(range.to_dst_range(14, 1), (Some((24, 1)), None));
-    // assert_eq!(range.to_dst_range(14, 2), (Some((24, 1)), Some((15, 1))));
-    // assert_eq!(range.to_dst_range(16, 2), (None, Some((16, 2))));
-    // assert_eq!(range.to_dst_range(15, 2), (None, Some((15, 2))));
+    assert_eq!(range.to_dst_range(9, 1), (None, Some((9, 1)), None));
+    assert_eq!(range.to_dst_range(10, 1), (Some((20, 1)), None, None));
+    assert_eq!(range.to_dst_range(10, 4), (Some((20, 4)), None, None)); 
+    assert_eq!(range.to_dst_range(11, 3), (Some((21, 3)), None, None));
+    assert_eq!(range.to_dst_range(8, 4), (Some((20, 2)), Some((8, 2)), None));
+    assert_eq!(range.to_dst_range(13, 6), (Some((23, 2)), Some((15, 4)), None));
+    assert_eq!(range.to_dst_range(14, 1), (Some((24, 1)), None, None));
+    assert_eq!(range.to_dst_range(14, 2), (Some((24, 1)), Some((15, 1)), None));
+    assert_eq!(range.to_dst_range(16, 2), (None, Some((16, 2)), None));
+    assert_eq!(range.to_dst_range(15, 2), (None, Some((15, 2)), None));
 
     assert_eq!(range.to_dst_range(9, 20), (
         Some((20, 5)),
