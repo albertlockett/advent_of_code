@@ -18,7 +18,7 @@ impl Card {
 
         Card {
             win_nums: to_num_set(num_sec_iter.next().unwrap()),
-            card_nums: to_num_set(num_sec_iter.next().unwrap())
+            card_nums: to_num_set(num_sec_iter.next().unwrap()),
         }
     }
 
@@ -73,7 +73,7 @@ struct CardCount<T> {
     counts: Vec<T>,
 }
 
-impl <T: AddAssign + Default + Copy> CardCount<T> {
+impl<T: AddAssign + Default + Copy> CardCount<T> {
     fn new() -> Self {
         CardCount { counts: vec![] }
     }
