@@ -13,6 +13,20 @@ enum HandType {
     HighCard,
 }
 
+impl HandType {
+    fn incr(self) -> Self {
+        match self {
+            HandType::FiveOfAKind => HandType::FiveOfAKind,
+            HandType::FourOfAKind => HandType::FiveOfAKind,
+            HandType::FullHouse => HandType::FourOfAKind,
+            HandType::ThreeOfAKind => HandType::FourOfAKind,
+            HandType::TwoPair => HandType::FullHouse,
+            HandType::OnePair => HandType::ThreeOfAKind,
+            HandType::HighCard => HandType::OnePair,
+        }
+    }
+}
+
 struct Card {
   value: char,
   score: u8,  
@@ -30,6 +44,12 @@ impl Card {
                 'A' => 14,
                 _ => value as u8 - '0' as u8,
             },
+        }
+    }
+
+    fn to_p2(&mut self) {
+        if self.value == 'J' {
+            self.score = 0;
         }
     }
 }
@@ -58,6 +78,10 @@ impl Hand {
             bid,
             hand_type,
         }
+    }
+
+    fn to_p2(&mut self) {
+        self.hand_type = calculate_hand_type_p2(&self.cards);
     }
 }
 
@@ -129,6 +153,44 @@ fn calculate_hand_type(cards: &Vec<Card>) -> HandType {
     }
 }
 
+fn calculate_hand_type_p2(cards: &Vec<Card>) -> HandType {
+    let mut card_counts = [0; 15];
+    let mut count_jokers = 0;
+    for card in cards {
+        if card.value == 'J' {
+            count_jokers += 1;
+            continue;
+        }
+        card_counts[card.score as usize] += 1;
+    }
+
+    let mut card_counts_sorted = card_counts.clone();
+    card_counts_sorted.sort_by(|a, b| b.cmp(a));
+
+    let mut card_counts_sorted = card_counts_sorted[0..15].iter();
+    let first = card_counts_sorted.next().unwrap();
+    let second = card_counts_sorted.next().unwrap();
+    let third = card_counts_sorted.next().unwrap();
+    let fourth = card_counts_sorted.next().unwrap();
+    let fifth = card_counts_sorted.next().unwrap();
+
+    let mut hand_type = match (first, second, third, fourth, fifth) {
+        (5, _, _, _, _) => HandType::FiveOfAKind,
+        (4, _, _, _, _) => HandType::FourOfAKind,
+        (3, 2, _, _, _) => HandType::FullHouse,
+        (3, _, _, _, _) => HandType::ThreeOfAKind,
+        (2, 2, _, _, _) => HandType::TwoPair,
+        (2, _, _, _, _) => HandType::OnePair,
+        _ => HandType::HighCard,
+    };
+
+    for _ in 0..count_jokers {
+        hand_type = hand_type.incr();
+    }
+
+    return hand_type
+}
+
 #[test]
 fn test_hand() {
     let hand = Hand::new("32T3K 765");
@@ -158,12 +220,25 @@ fn main() -> std::io::Result<()> {
         .collect::<Vec<Hand>>();
     hands.sort();
 
-    let mut total_winnings = 0;
+    let mut total_winnings_p1 = 0;
     for i in 0..hands.len() {
-        total_winnings += (1 + i as u32) * hands[i].bid;
+        total_winnings_p1 += (1 + i as u32) * hands[i].bid;
     }
 
-    println!("Total winnings: {}", total_winnings);
+    println!("Total winnings P1: {}", total_winnings_p1);
+
+    hands.iter_mut().for_each(|hand| {
+        hand.to_p2();
+        hand.cards.iter_mut().for_each(Card::to_p2);
+    });
+    hands.sort();
+
+    let mut total_winnings_p2 = 0;
+    for i in 0..hands.len() {
+        total_winnings_p2 += (1 + i as u32) * hands[i].bid;
+    }
+
+    println!("Total winnings P2: {}", total_winnings_p2);
 
     Ok(())
 }
