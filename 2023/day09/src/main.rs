@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 
 struct Polynomial {
-    y_vals: Vec<i32>,
+    y_vals: Vec<i128>,
     lagrange_seq: Vec<(LagrangeNum, LagrangeDem)>,
 }
 
@@ -14,8 +14,8 @@ impl Polynomial {
         }
     }
 
-    fn expand(&mut self, y_val: i32) {
-        let x_val = self.y_vals.len() as i32;
+    fn expand(&mut self, y_val: i128) {
+        let x_val = self.y_vals.len() as i128;
         for (num, dem) in self.lagrange_seq.iter_mut() {
             num.expand(x_val);
             dem.expand(x_val);
@@ -27,7 +27,7 @@ impl Polynomial {
         ));
     }
 
-    fn eval(&self, x_val: i32) -> i32 {
+    fn eval(&self, x_val: i128) -> i128 {
         let mut result = 0;
         let mut y_vals_iter = self.y_vals.iter();
         for (num, dem) in self.lagrange_seq.iter() {
@@ -85,14 +85,14 @@ fn test_polynomial() {
 }
 
 struct LagrangeDem {
-    seq_idx: i32,
-    dem_val: i32,
+    seq_idx: i128,
+    dem_val: i128,
 }
 
 impl LagrangeDem {
-    fn new(sequence: &Vec<i32>, idx: usize) -> Self {
+    fn new(sequence: &Vec<i128>, idx: usize) -> Self {
         let mut result = LagrangeDem {
-            seq_idx: idx as i32,
+            seq_idx: idx as i128,
             dem_val: 1,
         };
 
@@ -100,13 +100,13 @@ impl LagrangeDem {
             if i == idx {
                 continue;
             }
-            result.expand(i as i32);
+            result.expand(i as i128);
         }
 
         result
     }
 
-    fn expand(&mut self, x_val: i32) {
+    fn expand(&mut self, x_val: i128) {
         self.dem_val *= self.seq_idx - x_val;
     }
 }
@@ -135,11 +135,11 @@ fn test_langrange_dem_expand() {
 }
 
 struct LagrangeNum {
-    coefficients: Vec<i32>,
+    coefficients: Vec<i128>,
 }
 
 impl LagrangeNum {
-    fn new(sequence: &Vec<i32>, idx: usize) -> Self {
+    fn new(sequence: &Vec<i128>, idx: usize) -> Self {
         let mut result = LagrangeNum {
             coefficients: vec![1],
         };
@@ -148,13 +148,13 @@ impl LagrangeNum {
             if i == idx {
                 continue;
             }
-            result.expand(i as i32);
+            result.expand(i as i128);
         }
 
         result
     }
 
-    fn expand(&mut self, x_val: i32) {
+    fn expand(&mut self, x_val: i128) {
         // self.coefficients.push(y_val);
         let next_const = self.coefficients[self.coefficients.len() - 1] * -x_val;
         let mut i = self.coefficients.len() - 1;
@@ -165,7 +165,7 @@ impl LagrangeNum {
         self.coefficients.push(next_const);
     }
 
-    fn eval(&self, x_val: i32) -> i32 {
+    fn eval(&self, x_val: i128) -> i128 {
         let mut result = 0;
         for i in 0..self.coefficients.len() {
             let exp = self.coefficients.len() - i - 1;
@@ -218,13 +218,40 @@ fn test_lagrange_num_eval() {
 }
 
 fn main() {
-    let mut file = File::open("input_test.txt").unwrap();
+    let mut file = File::open("input.txt").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
     let mut line_iter = contents.split("\n").into_iter();
 
-    for line in 
+    let mut total_results = 0;
+    for line in line_iter {
+        let nums = line
+            .split(" ")
+            .into_iter()
+            .map(|x| x.parse::<i128>().unwrap())
+            .collect::<Vec<i128>>();
+
+        let mut polynomial = Polynomial::new();
+        polynomial.expand(nums[0]);
+        polynomial.expand(nums[1]);
+
+        for i in 2..nums.len() {
+            let last_idx = nums.len() - 1;
+            let result = polynomial.eval(last_idx as i128);
+            if result == nums[last_idx] {
+                break;
+            }
+            polynomial.expand(nums[i]);
+        }
+
+        let result = polynomial.eval(nums.len() as i128);
+        total_results += result;
+
+        println!("result of line {}: {}", line, result);
+    }
+
+    println!("part 1 result = {}", total_results);
 }
 
 #[test]
@@ -238,8 +265,8 @@ fn test_input() {
     let nums = line1
         .split(" ")
         .into_iter()
-        .map(|x| x.parse::<i32>().unwrap())
-        .collect::<Vec<i32>>();
+        .map(|x| x.parse::<i128>().unwrap())
+        .collect::<Vec<i128>>();
 
     let mut polynomial = Polynomial::new();
     polynomial.expand(nums[0]);
@@ -254,8 +281,8 @@ fn test_input() {
     let nums = line2
         .split(" ")
         .into_iter()
-        .map(|x| x.parse::<i32>().unwrap())
-        .collect::<Vec<i32>>();
+        .map(|x| x.parse::<i128>().unwrap())
+        .collect::<Vec<i128>>();
 
     let mut polynomial = Polynomial::new();
     polynomial.expand(nums[0]);
