@@ -224,7 +224,8 @@ fn main() {
 
     let mut line_iter = contents.split("\n").into_iter();
 
-    let mut total_results = 0;
+    let mut p1_total_results = 0;
+    let mut p2_total_results = 0;
     for line in line_iter {
         let nums = line
             .split(" ")
@@ -245,13 +246,20 @@ fn main() {
             polynomial.expand(nums[i]);
         }
 
-        let result = polynomial.eval(nums.len() as i128);
-        total_results += result;
+        let p1_result = polynomial.eval(nums.len() as i128);
+        p1_total_results += p1_result;
 
-        println!("result of line {}: {}", line, result);
+        println!("p1 result of line {}: {}", line, p1_result);
+
+
+        let p2_result = polynomial.eval(-1);
+        p2_total_results += p2_result;
+
+        println!("p2 result of line {}: {}", line, p2_result);
     }
 
-    println!("part 1 result = {}", total_results);
+    println!("part 1 result = {}", p1_total_results);
+    println!("part 2 result = {}", p2_total_results);
 }
 
 #[test]
