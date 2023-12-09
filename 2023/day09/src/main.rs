@@ -46,13 +46,12 @@ fn test_polynomial() {
     polynomial.expand(3);
     polynomial.expand(6);
 
-
     // (x0 - x1)(x0 - x2)
     // (0 - 1)(0 - 2)
     // (-1)(-2)
     // 2
     assert_eq!(polynomial.lagrange_seq[0].1.dem_val, 2);
-    
+
     // (x1 - x0)(x1 - x2)
     // (1 - 0)(1 - 2)
     // (1)(-1)
@@ -249,13 +248,8 @@ fn main() {
         let p1_result = polynomial.eval(nums.len() as i128);
         p1_total_results += p1_result;
 
-        println!("p1 result of line {}: {}", line, p1_result);
-
-
         let p2_result = polynomial.eval(-1);
         p2_total_results += p2_result;
-
-        println!("p2 result of line {}: {}", line, p2_result);
     }
 
     println!("part 1 result = {}", p1_total_results);
