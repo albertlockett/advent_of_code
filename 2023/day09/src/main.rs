@@ -79,56 +79,6 @@ impl Polynomial {
     }
 }
 
-struct LagrangeDem {
-    seq_idx: i128,
-    dem_val: i128,
-}
-
-impl LagrangeDem {
-    fn new(sequence: &Vec<i128>, idx: usize) -> Self {
-        let mut result = LagrangeDem {
-            seq_idx: idx as i128,
-            dem_val: 1,
-        };
-
-        for i in 0..sequence.len() {
-            if i == idx {
-                continue;
-            }
-            result.expand(i as i128);
-        }
-
-        result
-    }
-
-    fn expand(&mut self, x_val: i128) {
-        self.dem_val *= self.seq_idx - x_val;
-    }
-}
-
-#[test]
-fn test_langrange_dem_expand() {
-    let mut lagrange_dem = LagrangeDem {
-        seq_idx: 0,
-        dem_val: 1,
-    };
-    // (0 - 1)
-    lagrange_dem.expand(1);
-    assert_eq!(lagrange_dem.dem_val, -1);
-
-    // (0 - 1)(0 - 2)
-    // (-1)(-2)
-    // 2
-    lagrange_dem.expand(2);
-    assert_eq!(lagrange_dem.dem_val, 2);
-
-    // (0 - 1)(0 - 2)(0 - 3)
-    // (2)(-3)
-    // -6
-    lagrange_dem.expand(3);
-    assert_eq!(lagrange_dem.dem_val, -6);
-}
-
 struct LagrangeNum {
     coefficients: Vec<i128>,
 }
@@ -168,6 +118,33 @@ impl LagrangeNum {
             result += val;
         }
         result
+    }
+}
+
+struct LagrangeDem {
+    seq_idx: i128,
+    dem_val: i128,
+}
+
+impl LagrangeDem {
+    fn new(sequence: &Vec<i128>, idx: usize) -> Self {
+        let mut result = LagrangeDem {
+            seq_idx: idx as i128,
+            dem_val: 1,
+        };
+
+        for i in 0..sequence.len() {
+            if i == idx {
+                continue;
+            }
+            result.expand(i as i128);
+        }
+
+        result
+    }
+
+    fn expand(&mut self, x_val: i128) {
+        self.dem_val *= self.seq_idx - x_val;
     }
 }
 
@@ -257,5 +234,28 @@ mod tests {
         //   = 8 + 8 + 6 + 4
         //   = 26
         assert_eq!(lagrange_num.eval(2), 26);
+    }
+
+    #[test]
+    fn test_langrange_dem_expand() {
+        let mut lagrange_dem = crate::LagrangeDem {
+            seq_idx: 0,
+            dem_val: 1,
+        };
+        // (0 - 1)
+        lagrange_dem.expand(1);
+        assert_eq!(lagrange_dem.dem_val, -1);
+
+        // (0 - 1)(0 - 2)
+        // (-1)(-2)
+        // 2
+        lagrange_dem.expand(2);
+        assert_eq!(lagrange_dem.dem_val, 2);
+
+        // (0 - 1)(0 - 2)(0 - 3)
+        // (2)(-3)
+        // -6
+        lagrange_dem.expand(3);
+        assert_eq!(lagrange_dem.dem_val, -6);
     }
 }
