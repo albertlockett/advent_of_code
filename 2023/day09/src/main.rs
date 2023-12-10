@@ -199,11 +199,11 @@ mod tests {
         let mut lagrange_num = crate::LagrangeNum {
             coefficients: vec![1],
         };
-        // y = (x - 1) = -1 + x
+        // y = (x - 1) = x - 1
         lagrange_num.expand(1);
         assert_eq!(lagrange_num.coefficients, vec![1, -1]);
 
-        // // y = (x - 1)(x - 2) = 2 - 3x + x^2
+        // // y = (x - 1)(x - 2) = x^2 - 3x + 2
         lagrange_num.expand(2);
         assert_eq!(lagrange_num.coefficients, vec![1, -3, 2]);
 
@@ -223,7 +223,6 @@ mod tests {
         };
 
         // y = x^3 + 2x^2 + 3x + 4
-        //   = 4 + 3 + 2 + 1
         assert_eq!(lagrange_num.eval(0), 4);
 
         // y = 1^3 + 2*1^2 + 3*1 + 4
