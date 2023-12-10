@@ -100,7 +100,6 @@ impl LagrangeNum {
     }
 
     fn expand(&mut self, x_val: i128) {
-        // self.coefficients.push(y_val);
         let next_const = self.coefficients[self.coefficients.len() - 1] * -x_val;
         let mut i = self.coefficients.len() - 1;
         while i > 0 {
