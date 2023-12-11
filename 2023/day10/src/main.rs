@@ -2,12 +2,12 @@ use std::fs::File;
 use std::io::prelude::*;
 
 fn main() {
-    let mut file = File::open("input_test.txt").unwrap();
+    let mut file = File::open("input.txt").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
     let first_line = contents.split("\n").into_iter().take(1).next().unwrap();
-    let width: usize = first_line.len() - 1;
+    let width: usize = first_line.len();
 
     let mut idx: usize = 0;
     let mut start_idx: usize = 0;
@@ -16,12 +16,15 @@ fn main() {
         contents.chars().filter_map(|c| {
             idx += 1;
             match c {
-                '\n' => None,
-                'S' => {
-                    start_idx = idx - 1;
+                '\n' => {
+                    idx -= 1;
                     None
                 }
-                _ => Pipe::new(c),
+                'S' => {
+                    start_idx = idx - 1;
+                    Some(Pipe::new(c))
+                }
+                _ => Some(Pipe::new(c)),
             }
         }),
     );
@@ -57,16 +60,28 @@ fn main() {
         let pipe = grid.get(fwd.x, fwd.y);
 
         // advance forward traversal
-        fwd.dir = pipe.next(fwd.x, fwd.y, fwd.dir);
+        fwd.dir = pipe.next_dir(fwd.dir);
         fwd.advance();
 
         // check if we found a location the reverse traversal passed over
         if path_len_grid.get(fwd.x, fwd.y).is_some() {
             traversal_len = fwd.length;
-            break
+            break;
         }
-        path_len_grid.set(fwd.x, fwd.y, Some(fwd.length))
-        
+        path_len_grid.set(fwd.x, fwd.y, Some(fwd.length));
+
+        // do the reverse traversal
+        let pipe = grid.get(rev.x, rev.y);
+        rev.dir = pipe.next_dir(rev.dir);
+        rev.advance();
+
+        // check if we found a location the reverse traversal passed over
+        let dist = path_len_grid.get(rev.x, rev.y);
+        if dist.is_some() {
+            traversal_len = dist.unwrap();
+            break;
+        }
+        path_len_grid.set(rev.x, rev.y, Some(rev.length));
     }
 
     println!("p1 results = {}", traversal_len)
@@ -102,9 +117,12 @@ fn get_start_dirs(grid: &Grid<Pipe>, start_x: usize, start_y: usize) -> (Dir, Di
     }
 
     // look for the reverse direction
-    let left = grid.get(start_x - 1, start_y);
-    if *left == Pipe::HBar || *left == Pipe::TL || *left == Pipe::BL {
-        rev_dir = Some(Dir::Left);
+    if start_x > 0 {
+        // TODO need to add this check of all sides ...
+        let left = grid.get(start_x - 1, start_y);
+        if *left == Pipe::HBar || *left == Pipe::TL || *left == Pipe::BL {
+            rev_dir = Some(Dir::Left);
+        }
     }
     if rev_dir.is_none() {
         let bottom = grid.get(start_x, start_y + 1);
@@ -191,25 +209,59 @@ enum Pipe {
     BR,
     TL,
     BL,
+    Ground,
+    Start,
 }
 
 impl Pipe {
-    fn new(c: char) -> Option<Self> {
+    fn new(c: char) -> Self {
         match c {
-            '|' => Some(Self::VBar),
-            '-' => Some(Self::HBar),
-            'F' => Some(Self::TL),
-            'L' => Some(Self::BL),
-            '7' => Some(Self::TR),
-            'J' => Some(Self::BR),
-            '.' => None,
+            '|' => Self::VBar,
+            '-' => Self::HBar,
+            'F' => Self::TL,
+            'L' => Self::BL,
+            '7' => Self::TR,
+            'J' => Self::BR,
+            '.' => Self::Ground,
+            'S' => Self::Start,
             _ => panic!("invalid char {}", c),
         }
     }
 
-    fn next(&self, x: usize, y: usize, curr_dir: Dir) -> Dir {
-        // TODO
-        Dir::Up
+    fn next_dir(&self, curr_dir: Dir) -> Dir {
+        match self {
+            Pipe::HBar => match curr_dir {
+                Dir::Left => Dir::Left,
+                Dir::Right => Dir::Right,
+                _ => panic!("invalid dir"),
+            },
+            Pipe::VBar => match curr_dir {
+                Dir::Up => Dir::Up,
+                Dir::Down => Dir::Down,
+                _ => panic!("invalid dir"),
+            },
+            Pipe::TR => match curr_dir {
+                Dir::Up => Dir::Left,
+                Dir::Right => Dir::Down,
+                _ => panic!("invalid dir"),
+            },
+            Pipe::TL => match curr_dir {
+                Dir::Up => Dir::Right,
+                Dir::Left => Dir::Down,
+                _ => panic!("invalid dir"),
+            },
+            Pipe::BR => match curr_dir {
+                Dir::Down => Dir::Left,
+                Dir::Right => Dir::Up,
+                _ => panic!("invalid dir"),
+            },
+            Pipe::BL => match curr_dir {
+                Dir::Down => Dir::Right,
+                Dir::Left => Dir::Up,
+                _ => panic!("invalid dir"),
+            },
+            _ => panic!("invalid dir"),
+        }
     }
 }
 
