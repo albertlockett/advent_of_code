@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-fn main() {
+fn main() { 
     let mut file = File::open("input.txt").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
@@ -93,29 +93,201 @@ fn main() {
 
 
     // P2 smarter way
-    // let mut expanded_grid = Grid::new(width * 2, vec![Pipe::Ground; (width * 2) * (width * 2)]);
-    // for y in 0..width {
-    //     for x in 0..width {
-    //         let dist = path_len_grid.get(x, y);
-    //         if dist.is_none() {
-    //             expanded_grid.set(x * 2, y * 2, Pipe::Ground);
-    //             expanded_grid.set(x * 2 + 1, y * 2, Pipe::Ground);
-    //         } else {
-    //             let pipe = grid.get(x, y);
-    //             expanded_grid.set(x * 2, y * 2, pipe.clone());
-    //             match pipe {
-    //                 Pipe::HBar | Pipe::BL | Pipe::TL => {
-    //                     expanded_grid.set(x * 2 + 1, y * 2, Pipe::HBar);
-    //                 },
-    //                 _ => {
-    //                     expanded_grid.set(x * 2 + 1, y * 2, Pipe::Ground);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    let mut expanded_grid = Grid::new(width * 2, vec![Pipe::Ground; (width * 2) * (width * 2)]);
+    for y in 0..width {
+        for x in 0..width {
+            let dist = path_len_grid.get(x, y);
+            if dist.is_none() {
+                expanded_grid.set(x * 2, y * 2, Pipe::Ground);
+                expanded_grid.set(x * 2 + 1, y * 2, Pipe::Ground);
+            } else {
+                let pipe = grid.get(x, y);
+                expanded_grid.set(x * 2, y * 2, pipe.clone());
+                match pipe {
+                    Pipe::HBar => {
+                        expanded_grid.set(x * 2 + 1, y * 2, Pipe::HBar);
+                    },
+                    Pipe::VBar => {
+                        expanded_grid.set(x * 2 , y * 2 + 1, Pipe::VBar);
+                    },
+                    Pipe::TR => {
+                        expanded_grid.set(x * 2, y * 2 + 1, Pipe::VBar);
+                    },
+                    Pipe::TL => {
+                        expanded_grid.set(x * 2 + 1, y * 2, Pipe::HBar);
+                        expanded_grid.set(x * 2, y * 2 + 1, Pipe::VBar);
+                    },
+                    Pipe::BL => {
+                        expanded_grid.set(x * 2 + 1, y * 2, Pipe::HBar);
+                    },
+                    _ => {
+                        expanded_grid.set(x * 2 + 1, y * 2, Pipe::Ground);
+                    }
+                }
+            }
+        }
+    }
 
+    let (fwd_dir, rev_dir) = get_start_dirs(&grid, start_x, start_y);
+    for dir in vec![fwd_dir, rev_dir] {
+        match dir {
+            Dir::Up => {
+                expanded_grid.set(start_x * 2, start_y * 2-1, Pipe::VBar);
+            },
+            Dir::Down => {
+                expanded_grid.set(start_x * 2, start_y * 2+1, Pipe::VBar);
+            },
+            Dir::Left => {
+                expanded_grid.set(start_x * 2-1, start_y * 2, Pipe::HBar);
+            },
+            Dir::Right => {
+                expanded_grid.set(start_x * 2+1, start_y * 2, Pipe::HBar);
+            }
+        }
+    }
 
+    let mut queue: Vec<OutsideTraversalNode> = vec![];
+    let mut visited_grid: Grid<bool> = Grid::new(expanded_grid.width, vec![false; expanded_grid.width * expanded_grid.width]);
+
+    // initialize the grid with every square around the outside that's not part of the path
+    for x in 0..expanded_grid.width {
+        let top = expanded_grid.get(x, 0);
+        if *top == Pipe::Ground {
+            queue.push(OutsideTraversalNode::Outside((x, 0)));
+        }
+
+        let bottom = expanded_grid.get(x, expanded_grid.width - 1);
+        if *bottom == Pipe::Ground {
+            queue.push(OutsideTraversalNode::Outside((x, expanded_grid.width - 1)));
+        }
+    }
+    for y in 0..expanded_grid.width {
+        let left = expanded_grid.get(0, y);
+        if *left == Pipe::Ground {
+            queue.push(OutsideTraversalNode::Outside((0, y)));
+        }
+
+        let right = expanded_grid.get(expanded_grid.width - 1, y);
+        if *right == Pipe::Ground {
+            queue.push(OutsideTraversalNode::Outside((expanded_grid.width - 1, y)));
+        }
+    }
+
+    let max_coords = (
+        expanded_grid.width - 1,
+        expanded_grid.data.len() / expanded_grid.width - 1
+    );
+
+    while queue.len() > 0 {
+        let node = queue.pop().unwrap();
+
+        let candidates = node.next_candidates(&max_coords);
+
+        for (coords, dir) in candidates {
+            // check if we've already visited this node
+            let visited = visited_grid.get(coords.0, coords.1);
+            if true == *visited {
+                continue;
+            }
+
+            // check if candidate is on the path
+            let pipe = expanded_grid.get(coords.0, coords.1);
+            if pipe == &Pipe::Ground {
+                queue.push(OutsideTraversalNode::Outside(coords));
+            }
+
+            // let dist = path_len_grid.get(coords.0, coords.1);
+            // if dist.is_some() {
+            //     // let pipe = grid.get(coords.0, coords.1);
+            //     // queue.push(OutsideTraversalNode::AlongPath(coords, dir, *pipe));
+            // } else {
+            //     queue.push(OutsideTraversalNode::Outside(coords));
+            // }
+        }
+
+        match &node {
+            // OutsideTraversalNode::AlongPath(coords, _, _) => {
+            //     visited_grid.set(coords.0, coords.1, true);
+            // },
+            OutsideTraversalNode::Outside(coords) => {
+                println!("here");
+                visited_grid.set(coords.0, coords.1, true);
+            }
+            _ => {},
+        }
+    }
+
+    for y in 0..expanded_grid.width {
+        for x in 0..expanded_grid.width {
+            let pipe = expanded_grid.get(x, y);
+            match pipe {
+                Pipe::HBar => {
+                    print!("-");
+                },
+                Pipe::VBar => {
+                    print!("|");
+                },
+                Pipe::TR => {
+                    print!("7");
+                },
+                Pipe::BR => {
+                    print!("J");
+                },
+                Pipe::TL => {
+                    print!("F");
+                },
+                Pipe::BL => {
+                    print!("L");
+                },
+                Pipe::Ground => {
+                    print!(".");
+                },
+                Pipe::Start => {
+                    print!("S");
+                }
+            }
+        }
+        print!("\n");
+    }
+
+    print!("\n\n");
+    let mut i_count = 0;
+    for y in 0..max_coords.1 + 1 {
+
+        for x in 0..max_coords.0 + 1 {
+            if y % 2 == 1 || x % 2 == 1 {
+                // print!(".");
+                continue;
+            }
+            let visited = visited_grid.get(x, y);
+            let dist = expanded_grid.get(x, y);
+
+            if true == *visited {
+                if *dist != Pipe::Ground {
+                    print!(",");
+                } else {
+                    print!("O");
+                }
+            } else {
+                if *dist != Pipe::Ground {
+                    print!(",");
+                } else {
+                    i_count += 1;
+                    
+                    print!("I");
+                }
+            }
+        }
+        if y % 2 == 0 {
+            // print!("\n");
+            continue
+        }
+        print!("\n");
+    }
+
+    println!("i_count = {}", i_count);
+
+    /* 
     // TODO -- assuming here that 0,0 is not on the path. Need to check this
 
     let curr_node = OutsideTraversalNode::Outside((0,0));
@@ -205,6 +377,7 @@ fn main() {
     }
 
     println!("i_count = {}", i_count);
+    */
 
 }
 
