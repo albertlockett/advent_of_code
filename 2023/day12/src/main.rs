@@ -17,7 +17,7 @@ fn main() {
 
     let lines = contents.lines();
     let parsed_lines = lines
-        .map(|line| ParsedLine::new(line))
+        .map(|line| ParsedLine::new(line, true))
         .collect::<Vec<ParsedLine>>();
 
     let mut total_result = 0;
@@ -31,17 +31,19 @@ fn main() {
 struct ParsedLine {
     line_raw: String,
     seq: Vec<u8>,
-    check_seq_rs: u32,
+    check_seq_rs: u128,
 
-    p_mask: u32,
-    n_mask: u32,
-    mask_bits: u8,
+    p_mask: u128,
+    n_mask: u128,
+    mask_bits: u8, // length of the mask in bits
 }
 
 impl ParsedLine {
-    fn new(line: &str) -> Self {
+    fn new(line: &str, is_part_2: bool) -> Self {
+
         let mut sec_iter = line.split(" ");
 
+        // compute masks
         let mask_sec = sec_iter.next().unwrap();
         let first_non_dot_index = mask_sec.find(|c| c != '.').unwrap();
         let last_non_dot_index = mask_sec.rfind(|c| c != '.').unwrap();
@@ -50,8 +52,7 @@ impl ParsedLine {
 
         let mut p_mask = 0;
         let mut n_mask = 0;
-        let mask_bits = mask_seq_raw.len() as u8;
-
+        let mut mask_bits = mask_seq_raw.len() as u8;
         mask_seq_raw.chars().for_each(|c| {
             p_mask <<= 1;
             n_mask <<= 1;
@@ -63,12 +64,34 @@ impl ParsedLine {
             }
         });
 
-        let seq_sec = sec_iter.next().unwrap();
+        if is_part_2 {
+            let orig_p_mask = p_mask;
+            let orig_n_mask = n_mask;
+            for _ in 0..5 {
+                p_mask <<= mask_bits;
+                p_mask |= orig_p_mask;
 
+                n_mask <<= mask_bits;
+                n_mask |= orig_n_mask;
+            }
+            mask_bits *= 5;
+        }
+
+
+        // compute sequence
+
+        let seq_sec = sec_iter.next().unwrap();
         let mut seq = vec![];
         seq_sec.split(",").for_each(|x| {
             seq.push(x.parse::<u8>().unwrap());
         });
+        if is_part_2 {
+            for _ in 0..4 {
+                seq_sec.split(",").for_each(|x| {
+                    seq.push(x.parse::<u8>().unwrap());
+                });
+            }
+        }
         let check_seq_rs = v_to_rs(seq.clone());
 
         ParsedLine {
@@ -87,11 +110,20 @@ impl ParsedLine {
         let gap_bits = self.mask_bits - self.seq.iter().sum::<u8>();
         let gaps = compute_gaps(num_gaps, gap_bits);
 
+        let total_gaps = gaps.len();
+        println!("gaps for line {} : {}", self.line_raw, total_gaps);
+
         let mut all_results = vec![];
 
         let seq_total = self.seq.iter().sum::<u8>();
 
+        let mut i = 0;
         for gap in gaps {
+            i += 1;
+            if i % 100000 == 0 {
+                println!("{} / {}", i, total_gaps);
+            }
+
             let t = compute_t(&self.seq, &gap);
             let gap_total = gap.iter().sum::<u8>();
             let max_left_slide = self.mask_bits - seq_total - gap_total;
@@ -104,7 +136,7 @@ impl ParsedLine {
                 let t_rs = to_rs(t);
                 if t_rs == self.check_seq_rs {
                     if !all_results.contains(&t) {
-                        // print!("found result for line:\n{}\n {}\n\n", self.line_raw, format!("{:012b}", t));
+                        print!("found result for line:\n{}\n {}\n\n", self.line_raw, format!("{:012b}", t));
                         all_results.push(t);
                     }
                 }
@@ -140,7 +172,7 @@ fn compute_gaps(num_gaps: u8, gbits: u8) -> Vec<Vec<u8>> {
     return results;
 }
 
-fn compute_t(masks: &Vec<u8>, gaps: &Vec<u8>) -> u32 {
+fn compute_t(masks: &Vec<u8>, gaps: &Vec<u8>) -> u128 {
     let mut result = 0;
     for i in 0..masks.len() {
         let mask = masks[i];
@@ -160,7 +192,7 @@ fn compute_t(masks: &Vec<u8>, gaps: &Vec<u8>) -> u32 {
     result
 }
 
-fn v_to_rs(t: Vec<u8>) -> u32 {
+fn v_to_rs(t: Vec<u8>) -> u128 {
     let mut result = 0;
     t.iter().rev().for_each(|x| {
         result <<= 1;
@@ -173,7 +205,7 @@ fn v_to_rs(t: Vec<u8>) -> u32 {
     result
 }
 
-fn to_rs(t: u32) -> u32 {
+fn to_rs(t: u128) -> u128 {
     let mut t = t;
     let mut result = 0;
     while t > 0 {
@@ -198,7 +230,7 @@ mod test {
     #[test]
     fn test_parsed_line() {
         let line = ".??..??...?##. 1,1,3";
-        let parsed_line = ParsedLine::new(line);
+        let parsed_line = ParsedLine::new(line, false);
         assert_eq!(parsed_line.seq, vec![1, 1, 3]);
         assert_eq!(parsed_line.check_seq_rs, 0b1110101);
         assert_eq!(parsed_line.p_mask, 0b0000000000011);
@@ -211,7 +243,7 @@ mod test {
     #[test]
     fn test_parsed_line2() {
         let line = "????.######..#####. 1,6,5";
-        let parsed_line = ParsedLine::new(line);
+        let parsed_line = ParsedLine::new(line, false);
         assert_eq!(parsed_line.seq, vec![1, 6, 5]);
         assert_eq!(parsed_line.check_seq_rs, 0b11111011111101);
         assert_eq!(parsed_line.p_mask, 0b1111110011111);
@@ -223,7 +255,7 @@ mod test {
     #[test]
     fn test_parsed_line3() {
         let line = "?###???????? 3,2,1";
-        let parsed_line = ParsedLine::new(line);
+        let parsed_line = ParsedLine::new(line, false);
         assert_eq!(parsed_line.compute_arrs(), 10);
     }
 
