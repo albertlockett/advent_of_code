@@ -11,7 +11,7 @@ use std::io::prelude::*;
 //  0      0 111_
 
 fn main() {
-    let mut file = File::open("input_test1.txt").unwrap();
+    let mut file = File::open("input.txt").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
@@ -104,7 +104,7 @@ impl ParsedLine {
                 let t_rs = to_rs(t);
                 if t_rs == self.check_seq_rs {
                     if !all_results.contains(&t) {
-                        print!("found result for line:\n{}\n {}\n\n", self.line_raw, format!("{:012b}", t));
+                        // print!("found result for line:\n{}\n {}\n\n", self.line_raw, format!("{:012b}", t));
                         all_results.push(t);
                     }
                 }
