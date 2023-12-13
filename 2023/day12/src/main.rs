@@ -1,5 +1,8 @@
-//   
-// 1010111   
+use std::fs::File;
+use std::io::prelude::*;
+
+//
+// 1010111
 // ???.### 1,1,3
 
 //  1      1 111_
@@ -8,75 +11,109 @@
 //  0      0 111_
 
 fn main() {
-    let masks = vec![1, 1, 3];
-    let mask_rs = v_to_rs(masks.clone()); // todo avoid clone?
+    let mut file = File::open("input_test1.txt").unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
 
-    let p_mask = 0b000000000011;
-    let n_mask = 0b110011000111;
-    let mask_bits = 12;
+    let lines = contents.lines();
+    let parsed_lines = lines
+        .map(|line| ParsedLine::new(line))
+        .collect::<Vec<ParsedLine>>();
 
-    let num_gaps = (masks.len() - 1) as u8;
-    let gap_bits = mask_bits - masks.iter().sum::<u8>();
-    let gaps = compute_gaps(num_gaps, gap_bits);
-    // let gaps = vec![
-    //     vec![1, 1], vec![2, 1], vec![3, 1], vec![4, 1], vec![5, 1], vec![6, 1],
-    //     vec![1, 2], vec![2, 2], vec![3, 2], vec![4, 2], vec![5, 2],
-    //     vec![1, 3], vec![2, 3], vec![3, 3], vec![4, 3],
-    //     vec![1, 4], vec![2, 4], vec![3, 4],
-    //     vec![1, 5], vec![2, 5],
-    //     vec![1, 6]
-    // ];
+    let mut total_result = 0;
+    for pl in parsed_lines {
+        total_result += pl.compute_arrs();
 
-    let mut results = 0;
-    for gap in gaps {
-        let mut t = compute_t(&masks, &gap);
-        t |= p_mask;
-        t &= n_mask;
-        let t_rs = to_rs(t);
-        if t_rs == mask_rs {
-            println!("found match: {}", format!("{:#b}", t));
-            results += 1;
+    }
+    println!("p1 total {}", total_result);
+}
+
+struct ParsedLine {
+    line_raw: String,
+    seq: Vec<u8>,
+    check_seq_rs: u32,
+
+    p_mask: u32,
+    n_mask: u32,
+    mask_bits: u8,
+}
+
+impl ParsedLine {
+    fn new(line: &str) -> Self {
+        let mut sec_iter = line.split(" ");
+
+        let mask_sec = sec_iter.next().unwrap();
+        let first_non_dot_index = mask_sec.find(|c| c != '.').unwrap();
+        let last_non_dot_index = mask_sec.rfind(|c| c != '.').unwrap();
+
+        let mask_seq_raw = &mask_sec[first_non_dot_index..=last_non_dot_index];
+
+        let mut p_mask = 0;
+        let mut n_mask = 0;
+        let mask_bits = mask_seq_raw.len() as u8;
+
+        mask_seq_raw.chars().for_each(|c| {
+            p_mask <<= 1;
+            n_mask <<= 1;
+            if c == '#' {
+                p_mask += 1;
+            }
+            if c != '.' {
+                n_mask += 1;
+            }
+        });
+
+        let seq_sec = sec_iter.next().unwrap();
+
+        let mut seq = vec![];
+        seq_sec.split(",").for_each(|x| {
+            seq.push(x.parse::<u8>().unwrap());
+        });
+        let check_seq_rs = v_to_rs(seq.clone());
+
+        ParsedLine {
+            line_raw: line.to_string(),
+            seq,
+            check_seq_rs,
+            p_mask,
+            n_mask,
+            mask_bits,
         }
     }
 
-    println!("results: {}", results);
+    fn compute_arrs(&self) -> u32 {
+        // let mut results = 0;
+        let num_gaps = (self.seq.len() - 1) as u8;
+        let gap_bits = self.mask_bits - self.seq.iter().sum::<u8>();
+        let gaps = compute_gaps(num_gaps, gap_bits);
 
+        let mut all_results = vec![];
 
-            //     ??..??...?##
-    // let p_mask = 0b000000000011;
-    // let n_mask = 0b110011000111;
+        let seq_total = self.seq.iter().sum::<u8>();
 
-    // let mut t_mask = 0;
-    // t_mask = t_mask + masks[0];
-    // t_mask <<= 2;
-    // t_mask = t_mask + masks[1];
-    // t_mask <<= 4;
-    // t_mask = t_mask + masks[2];
+        for gap in gaps {
+            let t = compute_t(&self.seq, &gap);
+            let gap_total = gap.iter().sum::<u8>();
+            let max_left_slide = self.mask_bits - seq_total - gap_total;
+            
+            for i in 0..max_left_slide + 1 {
+                let mut t = t;
+                t <<= i;
+                t |= self.p_mask;
+                t &= self.n_mask;
+                let t_rs = to_rs(t);
+                if t_rs == self.check_seq_rs {
+                    if !all_results.contains(&t) {
+                        print!("found result for line:\n{}\n {}\n\n", self.line_raw, format!("{:012b}", t));
+                        all_results.push(t);
+                    }
+                }
+            }            
+        }
+        println!("results fror line {} : {}", self.line_raw, all_results.len());
 
-    // let mut test = t_mask | p_mask;
-    // test &= n_mask;
-
-    // check if test is 113
-
-    // find each combination of spaces can have between masks
-    // 1 bit, 1 bit, 3 bits
-    // where total length is 12 bits
-    // 12 - 1 - 1 - 3 = 7
-    // there's 2 spaces in between msaks
-    // so how many permutations of the digits 1 -> 6 can we make
-    // 1,1 2,1 3,1 4,1 5,1 6,1
-    // 1,2 2,2 3,2 4,2 5,2
-    // 1,3 2,3 3,3 4,3
-    // 1,4 2,4 3,4
-    // 1,5 2,5
-    // 1,6
-    // ....
-    // 6 + 5 + 4 + 3 + 2 + 1 = 21
-
-    // for each combo above, create our mask and slide it from left to right
-    // calculate test and check if the resut is 113
-
-    println!("Hello, world!");
+        all_results.len() as u32
+    }
 }
 
 fn compute_gaps(num_gaps: u8, gbits: u8) -> Vec<Vec<u8>> {
@@ -85,7 +122,7 @@ fn compute_gaps(num_gaps: u8, gbits: u8) -> Vec<Vec<u8>> {
         for i in 0..gbits {
             results.push(vec![i + 1]);
         }
-        return results
+        return results;
     }
 
     let l_gaps = compute_gaps(num_gaps - 1, gbits - 1);
@@ -148,7 +185,7 @@ fn to_rs(t: u32) -> u32 {
                 result <<= 1;
             }
         }
-        t >>= 1;   
+        t >>= 1;
     }
 
     result
@@ -159,20 +196,66 @@ mod test {
     use super::*;
 
     #[test]
+    fn test_parsed_line() {
+        let line = ".??..??...?##. 1,1,3";
+        let parsed_line = ParsedLine::new(line);
+        assert_eq!(parsed_line.seq, vec![1, 1, 3]);
+        assert_eq!(parsed_line.check_seq_rs, 0b1110101);
+        assert_eq!(parsed_line.p_mask, 0b0000000000011);
+        assert_eq!(parsed_line.n_mask, 0b0110011000111);
+        assert_eq!(parsed_line.mask_bits, 12);
+        assert_eq!(parsed_line.compute_arrs(), 4);
+    }
+
+
+    #[test]
+    fn test_parsed_line2() {
+        let line = "????.######..#####. 1,6,5";
+        let parsed_line = ParsedLine::new(line);
+        assert_eq!(parsed_line.seq, vec![1, 6, 5]);
+        assert_eq!(parsed_line.check_seq_rs, 0b11111011111101);
+        assert_eq!(parsed_line.p_mask, 0b1111110011111);
+        assert_eq!(parsed_line.n_mask, 0b111101111110011111);
+        assert_eq!(parsed_line.mask_bits, 18);
+        assert_eq!(parsed_line.compute_arrs(), 4);
+    }
+
+    #[test]
+    fn test_parsed_line3() {
+        let line = "?###???????? 3,2,1";
+        let parsed_line = ParsedLine::new(line);
+        assert_eq!(parsed_line.compute_arrs(), 10);
+    }
+
+    #[test]
     fn test_compute_gaps() {
         let result = compute_gaps(2, 7);
         let expected = vec![
-            vec![1, 1], vec![2, 1], vec![3, 1], vec![4, 1], vec![5, 1], vec![6, 1],
-            vec![1, 2], vec![2, 2], vec![3, 2], vec![4, 2], vec![5, 2],
-            vec![1, 3], vec![2, 3], vec![3, 3], vec![4, 3],
-            vec![1, 4], vec![2, 4], vec![3, 4],
-            vec![1, 5], vec![2, 5],
-            vec![1, 6]
+            vec![1, 1],
+            vec![2, 1],
+            vec![3, 1],
+            vec![4, 1],
+            vec![5, 1],
+            vec![6, 1],
+            vec![1, 2],
+            vec![2, 2],
+            vec![3, 2],
+            vec![4, 2],
+            vec![5, 2],
+            vec![1, 3],
+            vec![2, 3],
+            vec![3, 3],
+            vec![4, 3],
+            vec![1, 4],
+            vec![2, 4],
+            vec![3, 4],
+            vec![1, 5],
+            vec![2, 5],
+            vec![1, 6],
         ];
         for e in expected {
             assert_eq!(true, result.contains(&e));
         }
-
     }
 
     #[test]
