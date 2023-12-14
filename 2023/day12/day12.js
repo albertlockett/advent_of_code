@@ -35,8 +35,6 @@ function get_repair_segments(line) {
                 segment_length = 0;
             }
         }
-    
-        
     }
 
     if (segment_length > 0) {
