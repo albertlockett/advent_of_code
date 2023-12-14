@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
+use std::num::NonZeroUsize;
 
 //
 // 1010111
@@ -36,6 +37,9 @@ struct ParsedLine {
     p_mask: u128,
     n_mask: u128,
     mask_bits: u8, // length of the mask in bits
+
+    // length and offset
+    contig_rs: Vec<(u8, u8)>,
 }
 
 impl ParsedLine {
@@ -53,6 +57,10 @@ impl ParsedLine {
         let mut p_mask = 0;
         let mut n_mask = 0;
         let mut mask_bits = mask_seq_raw.len() as u8;
+
+        let mut contig_rs = vec![];
+        let mut segment_len = 0;
+        let mut segment_offset = 0;
         mask_seq_raw.chars().for_each(|c| {
             p_mask <<= 1;
             n_mask <<= 1;
@@ -60,9 +68,20 @@ impl ParsedLine {
                 p_mask += 1;
             }
             if c != '.' {
+                segment_len += 1;
                 n_mask += 1;
+                
+            } else {
+                if segment_len > 0 {
+                    contig_rs.push((segment_len, segment_offset - segment_len));
+                }
+                segment_len = 0;
             }
+            segment_offset += 1;
         });
+        if segment_len > 0 {
+            contig_rs.push((segment_len, segment_offset - segment_len));
+        }
 
         if is_part_2 {
             let orig_p_mask = p_mask;
@@ -101,6 +120,7 @@ impl ParsedLine {
             p_mask,
             n_mask,
             mask_bits,
+            contig_rs
         }
     }
 
@@ -108,7 +128,7 @@ impl ParsedLine {
         // let mut results = 0;
         let num_gaps = (self.seq.len() - 1) as u8;
         let gap_bits = self.mask_bits - self.seq.iter().sum::<u8>();
-        let gaps = compute_gaps(num_gaps, gap_bits);
+        let gaps = all_compute_gaps(num_gaps, gap_bits);
 
         let total_gaps = gaps.len();
         println!("gaps for line {} : {}", self.line_raw, total_gaps);
@@ -116,6 +136,8 @@ impl ParsedLine {
         let mut all_results = vec![];
 
         let seq_total = self.seq.iter().sum::<u8>();
+
+        let mut cache: lru::LruCache<u128, u128> = lru::LruCache::new(NonZeroUsize::new(100000).unwrap());
 
         let mut i = 0;
         for gap in gaps {
@@ -133,7 +155,16 @@ impl ParsedLine {
                 t <<= i;
                 t |= self.p_mask;
                 t &= self.n_mask;
-                let t_rs = to_rs(t);
+
+                let t_rs = match cache.get(&t) {
+                    Some(t_rs) => *t_rs,
+                    None => {
+                        let t_rs = to_rs(t);
+                        cache.put(t, t_rs);
+                        t_rs
+                    },
+                };
+                
                 if t_rs == self.check_seq_rs {
                     if !all_results.contains(&t) {
                         print!("found result for line:\n{}\n {}\n\n", self.line_raw, format!("{:012b}", t));
@@ -146,9 +177,11 @@ impl ParsedLine {
 
         all_results.len() as u32
     }
+
 }
 
-fn compute_gaps(num_gaps: u8, gbits: u8) -> Vec<Vec<u8>> {
+// not the good algorithm, too many gaps when brute forcing it
+fn all_compute_gaps(num_gaps: u8, gbits: u8) -> Vec<Vec<u8>> {
     if num_gaps == 1 {
         let mut results = vec![];
         for i in 0..gbits {
@@ -157,7 +190,7 @@ fn compute_gaps(num_gaps: u8, gbits: u8) -> Vec<Vec<u8>> {
         return results;
     }
 
-    let l_gaps = compute_gaps(num_gaps - 1, gbits - 1);
+    let l_gaps = all_compute_gaps(num_gaps - 1, gbits - 1);
     let mut results = vec![];
 
     for l_gap in l_gaps {
@@ -172,6 +205,87 @@ fn compute_gaps(num_gaps: u8, gbits: u8) -> Vec<Vec<u8>> {
     return results;
 }
 
+fn compute_possible_ranges(masks: &Vec<u8>, contig_ts: &Vec<(u8, u8)>, mask_bits: u8, p_mask: u128, n_mask: u128, check_seq_rs: u128) {
+    let mut ok_mask = 0;
+    for mask in masks {
+
+        // 1s for the number of mask bits
+        let mut mask_b = 0;
+        for _ in 0..*mask {
+            mask_b <<= 1;
+            mask_b += 1;
+            ok_mask <<= 1;
+            ok_mask += 1;
+        }
+
+        for contig_t in contig_ts {
+            let mut range_start = None;
+
+            let seg_len = contig_t.0;
+            let seg_offset = contig_t.1;
+            
+            if seg_len < *mask {
+                continue;
+            }
+
+            let mut mask_b = mask_b;
+            // move to start of segment
+            mask_b <<= (mask_bits - contig_t.1) as u128; // TODO check off by one
+
+            let mut segment_ranges = vec![];
+
+            for i in 0..seg_len {
+                mask_b >>= 1;
+                println!("{:012b} = mask_b", mask_b);
+                let mut t = mask_b | p_mask;
+                t &= n_mask;
+                println!("{:012b} = t", t);
+                let t_rs = to_rs(t);
+                println!("{:012b} = t_rs", t_rs);
+
+                println!("{:012b} = ok_mask", ok_mask);
+                println!("{:012b} = check_seq_rs", check_seq_rs);
+
+                if ok_mask & check_seq_rs == ok_mask & t_rs {
+                    if range_start == None {
+                        range_start = Some(i);
+                    }
+                } else {
+                    if range_start != None {
+                        // end of range
+                        segment_ranges.push((range_start.unwrap(), i));
+                    }
+                    range_start = None;
+                }
+            }
+            if range_start != None {
+                segment_ranges.push((range_start.unwrap(), seg_len));
+            }
+        }
+
+        ok_mask <<= 1;
+    }
+
+}
+
+#[test]
+fn test_part_2_scratch() {
+    let line = ".??..??...?##. 1,1,3";
+    let parsed_line = ParsedLine::new(line, true);
+    assert_eq!(parsed_line.seq, vec![1, 1, 3]);
+    assert_eq!(parsed_line.check_seq_rs, 0b1110101);
+    assert_eq!(parsed_line.p_mask, 0b0000000000011);
+    assert_eq!(parsed_line.n_mask, 0b0110011000111);
+    assert_eq!(parsed_line.mask_bits, 12);
+    assert_eq!(parsed_line.compute_arrs(), 4);
+    assert_eq!(parsed_line.contig_rs, vec![(2, 0), (2, 4), (3, 9)]);
+
+    let mask_b = 0b111;
+    
+
+}
+
+// create the value t for testing against the thing
 fn compute_t(masks: &Vec<u8>, gaps: &Vec<u8>) -> u128 {
     let mut result = 0;
     for i in 0..masks.len() {
@@ -192,6 +306,7 @@ fn compute_t(masks: &Vec<u8>, gaps: &Vec<u8>) -> u128 {
     result
 }
 
+// this converts to rs what we test if the repair sequence is correct
 fn v_to_rs(t: Vec<u8>) -> u128 {
     let mut result = 0;
     t.iter().rev().for_each(|x| {
@@ -205,6 +320,7 @@ fn v_to_rs(t: Vec<u8>) -> u128 {
     result
 }
 
+// turn the results of compute_t into something we can test output
 fn to_rs(t: u128) -> u128 {
     let mut t = t;
     let mut result = 0;
@@ -237,6 +353,9 @@ mod test {
         assert_eq!(parsed_line.n_mask, 0b0110011000111);
         assert_eq!(parsed_line.mask_bits, 12);
         assert_eq!(parsed_line.compute_arrs(), 4);
+        assert_eq!(parsed_line.contig_rs, vec![(2, 0), (2, 4), (3, 9)]);
+
+        compute_possible_ranges(&parsed_line.seq, &parsed_line.contig_rs, parsed_line.mask_bits, parsed_line.p_mask, parsed_line.n_mask, parsed_line.check_seq_rs)
     }
 
 
@@ -261,7 +380,7 @@ mod test {
 
     #[test]
     fn test_compute_gaps() {
-        let result = compute_gaps(2, 7);
+        let result = all_compute_gaps(2, 7);
         let expected = vec![
             vec![1, 1],
             vec![2, 1],

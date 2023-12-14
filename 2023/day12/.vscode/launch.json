@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "Launch day 12 node",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceFolder}/day12.js",
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        }
+    ]
+}
