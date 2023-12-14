@@ -18,11 +18,13 @@ fn main() {
 
     let lines = contents.lines();
     let parsed_lines = lines
-        .map(|line| ParsedLine::new(line, true))
+        .map(|line| ParsedLine::new(line, false))
         .collect::<Vec<ParsedLine>>();
 
     let mut total_result = 0;
     for pl in parsed_lines {
+        let results = pl.compute_arrs();
+        println!("total_results {} {}", pl.line_raw, results);
         total_result += pl.compute_arrs();
 
     }
@@ -281,7 +283,7 @@ fn test_part_2_scratch() {
     assert_eq!(parsed_line.contig_rs, vec![(2, 0), (2, 4), (3, 9)]);
 
     let mask_b = 0b111;
-    
+
 
 }
 

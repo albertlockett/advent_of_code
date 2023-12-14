@@ -48,14 +48,20 @@ function get_repair_segments(line) {
 }
 
 function findAllowedLocations(target_segments, line) {
+    const base_line = line.replace(/\?/g, '.');
     let farthest_child_start = line.length + 5;
+
     if (target_segments.length == 0) {
-        return [1, farthest_child_start]
+        const segments = get_segments(base_line);
+        if (segments.length == 0) {
+            return [1, farthest_child_start]
+        }
+        return [0, farthest_child_start]
     }
 
     const repair_segments = get_repair_segments(line);
 
-    const base_line = line.replace(/\?/g, '.');
+
 
     const segment = target_segments[0];
     let segment_mask = '';
@@ -135,9 +141,14 @@ target_segments = [2,1]
 results = findAllowedLocations(target_segments, line);
 console.log("results", results, "Ex"); // expect 3
 
-const input = fs.readFileSync('input_test1.txt', 'utf8');
+line = '.?#.???#???'
+target_segments = [2,2]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "Expect 2"); // expect 2
+
+const input = fs.readFileSync('input.txt', 'utf8');
 const lines = input.split('\n');
-console.log({ lines })
+// console.log({ lines })
 
 let total = 0;
 for (let i in lines) {
