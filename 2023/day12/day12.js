@@ -80,6 +80,16 @@ function findAllowedLocations(target_segments, line) {
         for (let i = 0; i < length; i++) {
             let offset_start_segment = offset + i;
             let offset_after_segment = offset + i + segment;
+            const test_line = base_line.slice(0, offset_start_segment) 
+                + segment_mask
+                + base_line.slice(offset_after_segment);
+
+            if (offset_start_segment > 1) {
+                if ("#" == test_line[offset_start_segment - 2] && '.' == test_line[offset_start_segment - 1]) {
+                    break;
+                }
+            }
+
             // if we're moving the segment into a position that the next segment
             // must occupy, break
             if (farthest_child_start > 0) {
@@ -91,9 +101,8 @@ function findAllowedLocations(target_segments, line) {
             if (offset_after_segment > offset + length) {
                 break;
             }
-            const test_line = base_line.slice(0, offset_start_segment) 
-                + segment_mask
-                + base_line.slice(offset_after_segment);
+
+            
             farthest_start = offset_start_segment;
 
             let result_segs = get_segments(test_line);
@@ -115,9 +124,7 @@ function findAllowedLocations(target_segments, line) {
 
 }
 
-findAllowedLocations = _.memoize(findAllowedLocations, (target_segments, line) => {
-    return target_segments.join(',') + line;
-})
+
 
 let line = ''
 let target_segments = []
@@ -133,12 +140,10 @@ target_segments = [1, 1, 3];
 results = findAllowedLocations(target_segments, line);
 console.log("results", results, "expect 4");
 // expect 4?
-
-line = "?#?#?#?#?#?#?#"
+line = "?#?#?#?#?#?#?#?"
 target_segments = [1,3,1,6]
 results = findAllowedLocations(target_segments, line);
 console.log("results", results, "expect 1");
-// expect 1
 
 line = "?###????????"
 target_segments = [3,2,1]
@@ -165,6 +170,11 @@ target_segments = [1,1]
 results = findAllowedLocations(target_segments, line);
 console.log("results", results, "expect 2"); // expect 2
 
+line = '?....#?#??.'
+target_segments = [1,1]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "expect 1"); // expect 2
+
 const input = fs.readFileSync('input.txt', 'utf8');
 const lines = input.split('\n');
 // console.log({ lines })
@@ -178,13 +188,17 @@ for (let i in lines) {
     const [line, t] = full_line.split(' ');
     const target_segments = t.split(',').map(x => parseInt(x));
     const [results, asdf, results_literal] = findAllowedLocations(target_segments, line);
-    console.log(`fl ${full_line} = ${results}`)
+    console.log(`fl1 ${full_line} = ${results}`)
     total += results;
 }
 
 console.log("total", total, "expect 21");
 
 let total2 = 0
+
+findAllowedLocations = _.memoize(findAllowedLocations, (target_segments, line) => {
+    return target_segments.join(',') + line;
+})
 
 // let start = parseInt(process.argv[2]);
 // let end = parseInt(process.argv[3]);
