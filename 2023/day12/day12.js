@@ -120,6 +120,10 @@ function findAllowedLocations(target_segments, line) {
         }
     }
 
+    if (results == 0) {
+        farthest_start = line.length + 5;
+    }
+
     return [results, farthest_start]
 
 }
@@ -175,8 +179,15 @@ target_segments = [1,1]
 results = findAllowedLocations(target_segments, line);
 console.log("results", results, "expect 1"); // expect 2
 
+line = '?..?#?.##?#?.??..?#?.##?#?.?'
+target_segments = [2,5,2,5]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "expect 1");
+
+
 const input = fs.readFileSync('input.txt', 'utf8');
 const lines = input.split('\n');
+
 // console.log({ lines })
 
 let total = 0;
@@ -222,7 +233,7 @@ for (let full_line of lines) {
     // const [results, asdf, results_literal] = findAllowedLocations(target_segments, line);
     const [results, asdf, results_literal] = findAllowedLocations(targets_5, line_5);
     // let num_results = _.uniq(results_literal).length;
-    console.log(`fl ${full_line} = ${results}`)
+    console.log(`fl2 ${full_line} = ${results}`)
     total2 += results;
 }
 console.log("total2", total2);
