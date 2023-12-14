@@ -1,9 +1,6 @@
 var fs = require('fs');
 var _ = require('lodash');
 
-var process = require('process');
-
-
 function get_segments(line) {
     let segments = []
     let segment_length = 0;
