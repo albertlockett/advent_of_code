@@ -77,6 +77,8 @@ function findAllowedLocations(target_segments, line) {
     let farthest_start = 0;
 
     for (let [offset, length] of repair_segments) {
+        let farthest_child_start = -1
+
         for (let i = 0; i < length; i++) {
             let offset_start_segment = offset + i;
             let offset_after_segment = offset + i + segment;
@@ -184,6 +186,25 @@ target_segments = [2,5,2,5]
 results = findAllowedLocations(target_segments, line);
 console.log("results", results, "expect 1");
 
+line = '????.??.?#?.?????.??.?#?.'
+target_segments = [3,1,3,1]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "expect ?");
+
+line = '?#?.?????.??.?#?.'
+target_segments = [1,3,1]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "expect ?");
+
+line = '????.??.?#?.?????'
+target_segments = [3,1,3]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "expect ?");
+
+line = '.??.?#?.?????'
+target_segments = [1,3]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "expect ?");
 
 const input = fs.readFileSync('input.txt', 'utf8');
 const lines = input.split('\n');
@@ -199,7 +220,7 @@ for (let i in lines) {
     const [line, t] = full_line.split(' ');
     const target_segments = t.split(',').map(x => parseInt(x));
     const [results, asdf, results_literal] = findAllowedLocations(target_segments, line);
-    console.log(`fl1 ${full_line} = ${results}`)
+    // console.log(`fl1 ${full_line} = ${results}`)
     total += results;
 }
 
@@ -232,8 +253,8 @@ for (let full_line of lines) {
 
     // const [results, asdf, results_literal] = findAllowedLocations(target_segments, line);
     const [results, asdf, results_literal] = findAllowedLocations(targets_5, line_5);
-    // let num_results = _.uniq(results_literal).length;
-    console.log(`fl2 ${full_line} = ${results}`)
+    let num_results = _.uniq(results_literal).length;
+    // console.log(`fl2 ${full_line} = ${results}`)
     total2 += results;
 }
 console.log("total2", total2);
