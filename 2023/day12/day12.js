@@ -1,4 +1,5 @@
 var fs = require('fs');
+var _ = require('lodash');
 
 
 function get_segments(line) {
@@ -54,9 +55,9 @@ function findAllowedLocations(target_segments, line) {
     if (target_segments.length == 0) {
         const segments = get_segments(base_line);
         if (segments.length == 0) {
-            return [1, farthest_child_start]
+            return [1, farthest_child_start, [base_line]]
         }
-        return [0, farthest_child_start]
+        return [0, farthest_child_start, []]
     }
 
     const repair_segments = get_repair_segments(line);
@@ -70,8 +71,8 @@ function findAllowedLocations(target_segments, line) {
     }
 
     let results = 0;
+    let results_literal = [];
     let farthest_start = 0;
-
 
     for (let [offset, length] of repair_segments) {
         for (let i = 0; i < length; i++) {
@@ -96,55 +97,84 @@ function findAllowedLocations(target_segments, line) {
                     target_segments.slice(1),
                     line.slice(offset_after_segment + 1)
                 );
+                // if (children[0] > 0) {
+                //     console.log(`found ${children[0]} for test_line ${test_line} on line ${line}`)
+                // }
                 results += children[0];
+                
                 farthest_child_start = children[1] + offset_after_segment + 1;
-            } else {
-                if (results > 0) {
-                    // or break?
-                    return [results, farthest_start]
+                for (let child of children[2]) {
+                    results_literal.push(test_line.slice(0, offset_after_segment+1) + child)
                 }
+            } else {
+                // if (results > 0) {
+                //     // or break?
+                //     return [
+                //         results,
+                //         farthest_start,
+                //         results_literal.filter(s => {
+                //             // return true
+                //             let segments = get_segments(s);
+                //             return _.isEqual(segments, target_segments)
+                //         })
+                //     ]
+                // }
             }
         }
     }
 
-    return [results, farthest_start]
+    return [results, farthest_start, results_literal.filter(s => {
+        // return true
+        let segments = get_segments(s);
+        return _.isEqual(segments, target_segments)
+    })]
 }
 
 let line = ''
 let target_segments = []
 let results = null
 
-line = '???..###'
-target_segments = [1, 1, 3]
-results = findAllowedLocations(target_segments, line);
-console.log("results", results, "expect 1");
+// line = '???..###'
+// target_segments = [1, 1, 3]
+// results = findAllowedLocations(target_segments, line);
+// console.log("results", results, "expect 1");
 
-line = ".??..??...?##.";
-target_segments = [1, 1, 3];
-results = findAllowedLocations(target_segments, line);
-console.log("results", results, "expect 4");
-// expect 4?
+// line = ".??..??...?##.";
+// target_segments = [1, 1, 3];
+// results = findAllowedLocations(target_segments, line);
+// console.log("results", results, "expect 4");
+// // expect 4?
 
-line = "?#?#?#?#?#?#?#"
-target_segments = [1,3,1,6]
-results = findAllowedLocations(target_segments, line);
-console.log("results", results, "expect 1");
-// expect 1
+// line = "?#?#?#?#?#?#?#"
+// target_segments = [1,3,1,6]
+// results = findAllowedLocations(target_segments, line);
+// console.log("results", results, "expect 1");
+// // expect 1
 
-line = "?###????????"
-target_segments = [3,2,1]
-results = findAllowedLocations(target_segments, line);
-console.log("results", results, "Expect 10"); // expect 10
+// line = "?###????????"
+// target_segments = [3,2,1]
+// results = findAllowedLocations(target_segments, line);
+// console.log("results", results, "Expect 10"); // expect 10
 
-line = "?????"
-target_segments = [2,1]
-results = findAllowedLocations(target_segments, line);
-console.log("results", results, "Ex"); // expect 3
+// line = "?????"
+// target_segments = [2,1]
+// results = findAllowedLocations(target_segments, line);
+// console.log("results", results, "expect 3"); // expect 3
 
-line = '.?#.???#???'
-target_segments = [2,2]
+// line = '.?#.???#???'
+// target_segments = [2,2]
+// results = findAllowedLocations(target_segments, line);
+// console.log("results", results, "expect 2"); // expect 2
+
+line = '???#.?.?..'
+target_segments = [1,1,1]
 results = findAllowedLocations(target_segments, line);
-console.log("results", results, "Expect 2"); // expect 2
+console.log("results", results, "expect 5"); // expect 2
+
+line = '?#.?.?..'
+target_segments = [1,1]
+results = findAllowedLocations(target_segments, line);
+console.log("results", results, "expect 2"); // expect 2
 
 const input = fs.readFileSync('input.txt', 'utf8');
 const lines = input.split('\n');
@@ -158,9 +188,10 @@ for (let i in lines) {
     }
     const [line, t] = full_line.split(' ');
     const target_segments = t.split(',').map(x => parseInt(x));
-    const [results] = findAllowedLocations(target_segments, line);
-    console.log(`${full_line} = ${results}`)
-    total += results;
+    const [results, asdf, results_literal] = findAllowedLocations(target_segments, line);
+    let num_results = _.uniq(results_literal).length;
+    console.log(`fl ${full_line} = ${num_results}`)
+    total += num_results;
 }
 
 console.log("total", total, "expect 21");
