@@ -130,6 +130,8 @@ function findAllowedLocations(target_segments, line) {
     })]
 }
 
+findAllowedLocations = _.memoize(findAllowedLocations);
+
 let line = ''
 let target_segments = []
 let results = null
@@ -176,7 +178,7 @@ target_segments = [1,1]
 results = findAllowedLocations(target_segments, line);
 console.log("results", results, "expect 2"); // expect 2
 
-const input = fs.readFileSync('input.txt', 'utf8');
+const input = fs.readFileSync('input_test1.txt', 'utf8');
 const lines = input.split('\n');
 // console.log({ lines })
 
@@ -195,3 +197,30 @@ for (let i in lines) {
 }
 
 console.log("total", total, "expect 21");
+
+let total2 = 0
+for (let i in lines) {
+    const full_line = lines[i];
+    if (full_line.length == 0) {
+        continue;
+    }
+    const [line, t] = full_line.split(' ');
+    const target_segments = t.split(',').map(x => parseInt(x));
+
+    let line_5 = []
+    let targets_5 = []
+    for (let i = 0; i < 5; i++) {
+        line_5.push(line)
+        targets_5 = [...targets_5, ...target_segments]
+    }
+    line_5 = line_5.join('?')
+
+    // const [results, asdf, results_literal] = findAllowedLocations(target_segments, line);
+    const [results, asdf, results_literal] = findAllowedLocations(targets_5, line_5);
+    let num_results = _.uniq(results_literal).length;
+    console.log(`fl ${full_line} = ${num_results}`)
+    total2 += num_results;
+}
+console.log("total2", total2);
+
+
