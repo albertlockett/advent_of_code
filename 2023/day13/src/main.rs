@@ -74,6 +74,28 @@ impl Grid {
         reflect
     }
 
+    // fn replace_smudge(&mut self) {
+    //     let bitmaps = self.to_bitmaps();
+    //     for i in 0..bitmaps.len() / 2 {
+    //         let a = bitmaps[i];
+    //         let b = bitmaps[bitmaps.len() - i - 1];
+    //         if let Some(smudge) = smudge_find(a, b) {
+    //             println!("smudge: {}", smudge);
+    //             let curr_char = match self.data_raw[i].chars().nth(smudge).unwrap(){
+    //                 '#' => '.',
+    //                 '.' => '#',
+    //                 _ => panic!("Invalid char"),
+    //             };
+    //             self.data_raw[i].replace_range(smudge..smudge+1, &curr_char.to_string());
+    //             return;
+    //         }
+    //     }
+
+    //     self.transpose();
+    //     self.replace_smudge();
+    //     self.transpose();
+    // }
+
     fn print(&self) {
         for row in &self.data_raw {
             println!("{}", row);
@@ -92,6 +114,7 @@ fn smudge_find(a: u32, b: u32) -> Option<usize> {
         digits += 1;
         diff >>= 1;
     }
+    digits -= 1;
 
     if 1<<digits == a ^ b {
         Some(digits)
@@ -101,7 +124,7 @@ fn smudge_find(a: u32, b: u32) -> Option<usize> {
 }
 
 fn main() {
-    let mut file = File::open("input.txt").expect("File not found");
+    let mut file = File::open("input_test.txt").expect("File not found");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Error reading file");
 
@@ -111,6 +134,7 @@ fn main() {
     let mut p1_total = 0;
     for mut grid in grids {
         grid.print();
+        // grid.replace_smudge();
 
         grid.transpose();
         let v_reflect = grid.find_reflect();
@@ -164,5 +188,13 @@ mod test {
         grid.transpose();
         let reflect = grid.find_reflect();
         assert_eq!(reflect, Some(5));
+    }
+
+    #[test]
+    fn test_find_smudge() {
+        let a = 0b101100110;
+        let b = 0b001100110;
+        let smudge = super::smudge_find(a, b);
+        assert_eq!(smudge, Some(8));
     }
 }
