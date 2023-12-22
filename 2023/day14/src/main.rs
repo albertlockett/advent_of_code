@@ -106,8 +106,49 @@ fn rotate_right(mut rows: Vec<u128>, width: usize) -> Vec<u128> {
     new_rows
 }
 
+// returns a bitmap of the rolling rocks for from and to after transfer
+#[inline(always)]
+fn transfer_2(from_roll_mask: u128, to_hash_mask: u128, to_roll_mask: u128) -> (u128, u128) {
+    // where we're blocked from transfering rolls
+    let to_mask = to_hash_mask | to_roll_mask; 
+
+    // what rolls to next mask
+    let transfer_mask = from_roll_mask & !to_mask;
+
+    // what remains after transfer
+    let from_remains = from_roll_mask & !transfer_mask;
+
+    return (from_remains, transfer_mask | to_roll_mask);
+}
+
+fn rotate_right_2(mut from_rows: &mut Vec<u128>, mut into_rows: &mut Vec<u128>, width: usize) {
+    for col in 0..width {
+        let mut new_row = 0;
+        for i in 0..from_rows.len() {
+            let bit = from_rows[i] & 1;
+            new_row += bit << i;
+            from_rows[i] >>= 1;
+        }
+        into_rows[width - col - 1] = new_row;
+    }
+}
+
+macro_rules! rotate_right_3 {
+    ($from_rows:ident, $into_rows:ident, $width:ident) => {
+        for col in 0..$width {
+            let mut new_row = 0;
+            for i in 0..$from_rows.len() {
+                let bit = $from_rows[i] & 1;
+                new_row += bit << i;
+                $from_rows[i] >>= 1;
+            }
+            $into_rows[$width - col - 1] = new_row;
+        }
+    };
+}
+
 fn main() {
-    let mut file = File::open("input_test.txt").expect("File not found");
+    let mut file = File::open("input.txt").expect("File not found");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Error reading file");
 
@@ -135,26 +176,49 @@ fn main() {
 
     let mut rows = vec![wall];
     rows.append(&mut lines.iter().map(|s| Row::new(&s)).collect::<Vec<Row>>());
+
+    let mut rolls = rows.iter().map(|r| r.roll_mask).collect::<Vec<u128>>();
+    let mut hashes = rows.iter().map(|r| r.hash_mask).collect::<Vec<u128>>();
+
+    let mut scratch_rolls = vec![0 as u128; width];
+    let mut scratch_hashes = vec![0 as u128; width];
     
     
-    let iters = 1000000000;
+    let iters = 1000000000; // 1 billion
+
+    let start = std::time::Instant::now();
 
     for i in 0..iters {
         if i % 10000 == 0 {
-            println!("{} / {}", i, iters);
+            let elapsed = start.elapsed().as_millis();
+            let iter_per_second = i as f64 / elapsed as f64 * 1000.0;
+            let finish_seconds = (iters - i) as f64 / iter_per_second;
+            let percent_done = i as f64 / iters as f64 * 100.0;
+            println!("{:.5}%: {} / {} iters = {:.5} iter/second  finish in {:.5}s = {:.5}hours", percent_done, i, iters, iter_per_second, finish_seconds, finish_seconds / 3600.0);
         }
 
-        for i in 1..rows.len() {
-            let (from_remains, to_rolls) = transfer(&rows[i - 1], &rows[i]);
-            rows[i - 1].roll_mask = from_remains;
-            rows[i].roll_mask = to_rolls;
-        }
-        let next_rolls = rotate_right(rows.iter().skip(1).map(|r| r.roll_mask).collect(), width);
-        let next_hashes = rotate_right(rows.iter().skip(1).map(|r| r.hash_mask).collect(), width);
+        for _ in 0..4 {
+            let prev_rolls = wall_mask;
+            let prev_hashes = wall_mask;
 
-        for i in 0..width {
-            rows[i + 1].roll_mask = next_rolls[i];
-            rows[i + 1].hash_mask = next_hashes[i];
+            for i in 0..width {
+                let (from_remains, to_rolls) = transfer_2(rolls[i], prev_hashes, prev_rolls);
+                rolls[i] = from_remains;
+                if i > 0 {
+                    rolls[i -1] = to_rolls;
+                }
+            }
+            // rotate_right_2(&mut rolls, &mut scratch_rolls, width);
+            rotate_right_3!(rolls, scratch_rolls, width);
+            let tmp_rolls = rolls;
+            rolls = scratch_rolls;
+            scratch_rolls = tmp_rolls;
+
+            // rotate_right_2(&mut hashes, &mut scratch_hashes, width);
+            rotate_right_3!(hashes, scratch_hashes, width);
+            let tmp_hashes = hashes;
+            hashes = scratch_hashes;
+            scratch_hashes = tmp_hashes;
         }
     }
 
