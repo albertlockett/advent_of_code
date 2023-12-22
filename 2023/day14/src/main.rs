@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::num::NonZeroUsize;
 use std::io::prelude::*;
-use std::hash::{Hash, Hasher};
+use std::hash::Hasher;
 
 use lru::LruCache;
 
@@ -81,22 +81,8 @@ impl Row {
 }
 
 // returns a bitmap of the rolling rocks for from and to after transfer
-fn transfer(from: &Row, to: &Row) -> (u128, u128) {
-    // where we're blocked from transfering rolls
-    let to_mask = to.hash_mask | to.roll_mask; 
-
-    // what rolls to next mask
-    let transfer_mask = from.roll_mask & !to_mask;
-
-    // what remains after transfer
-    let from_remains = from.roll_mask & !transfer_mask;
-
-    return (from_remains, transfer_mask | to.roll_mask);
-}
-
-// returns a bitmap of the rolling rocks for from and to after transfer
 #[inline(always)]
-fn transfer_2(from_roll_mask: u128, to_hash_mask: u128, to_roll_mask: u128) -> (u128, u128) {
+fn transfer(from_roll_mask: u128, to_hash_mask: u128, to_roll_mask: u128) -> (u128, u128) {
     // where we're blocked from transfering rolls
     let to_mask = to_hash_mask | to_roll_mask; 
 
@@ -109,7 +95,7 @@ fn transfer_2(from_roll_mask: u128, to_hash_mask: u128, to_roll_mask: u128) -> (
     return (from_remains, transfer_mask | to_roll_mask);
 }
 
-macro_rules! rotate_right_3 {
+macro_rules! rotate_right {
     ($from_rows:ident, $into_rows:ident, $width:ident) => {
         for col in 0..$width {
             let mut new_row = 0;
@@ -134,7 +120,7 @@ fn hash_rolls(rolls: &Vec<u128>, dir: u8) -> u64 {
 
 fn calculate_weight(mut rolls1: Vec<u128>, width: usize) -> u32 {
     let mut rolls = rolls1.clone();
-    rotate_right_3!(rolls1, rolls, width);
+    rotate_right!(rolls1, rolls, width);
     let mut total_weight = 0;
     for digit in 0..width {
         for row_idx in 0..width {
@@ -169,20 +155,29 @@ fn main() {
     println!("p1 total = {}", p1_total);
 
     // part 2
+
+
+    let mut rows = vec![];
+    rows.append(&mut lines.iter().map(|s| Row::new(&s)).collect::<Vec<Row>>());
+
+    // bitmaps for each row: 1 =  the rolling rocks 'O' / the square (hash) rocks '#'
+    let mut rolls = rows.iter().map(|r| r.roll_mask).collect::<Vec<u128>>();
+    let mut hashes = rows.iter().map(|r| r.hash_mask).collect::<Vec<u128>>();
+
+    // when we rotate the rows we're going to rotate them into these scratch buffers
+    // to avoid doing a 2nd allocation
+    let mut scratch_rolls = vec![0 as u128; width];
+    let mut scratch_hashes = vec![0 as u128; width];
+
+    // the mask for the end of the grid .. all 1s
     let mut wall_mask = 0;
     for _ in 0..width {
         wall_mask <<= 1;
         wall_mask |= 1;
     }
-    let wall = Row{roll_mask: 0, hash_mask: wall_mask};
 
-    let mut rows = vec![];
-    rows.append(&mut lines.iter().map(|s| Row::new(&s)).collect::<Vec<Row>>());
-
-    let mut rolls = rows.iter().map(|r| r.roll_mask).collect::<Vec<u128>>();
-    let mut hashes = rows.iter().map(|r| r.hash_mask).collect::<Vec<u128>>();
-
-    macro_rules! print_rolls {
+    // debug macro for printing the rows
+    macro_rules! _print_rolls {
         () => {
             for row in 0..width {
                 let mut chars = vec![];
@@ -206,23 +201,15 @@ fn main() {
             }
         };
     }
-
-    let mut scratch_rolls = vec![0 as u128; width];
-    let mut scratch_hashes = vec![0 as u128; width];
     
-    let mut cache = LruCache::<u64, (u64, u8, Vec<u128>)>::new(NonZeroUsize::new(500_000_000).unwrap());
+    // cache for configurations we've seen before
+    let mut cache = LruCache::<u64, u64>::new(NonZeroUsize::new(500_000_000).unwrap());
 
     let iters = 1000000000; // 1 billion
-    // let iters = 100;
-    let start = std::time::Instant::now();
-
     let mut cycle_break = None;
-
     for i in 0..iters {
-
-
-       
-        for j in 0..4 {
+        // rotate all directions
+        for j in 0..4 { 
             // roll the rocks as far as they can go
             let mut prev_hash = 0;
             let mut curr_hash = hash_rolls(&rolls, j);
@@ -231,7 +218,7 @@ fn main() {
                 let mut prev_hashes = wall_mask;
 
                 for i in 0..width {
-                    let (from_remains, to_rolls) = transfer_2(rolls[i], prev_hashes, prev_rolls);
+                    let (from_remains, to_rolls) = transfer(rolls[i], prev_hashes, prev_rolls);
                     rolls[i] = from_remains;
                     if i > 0 {
                         rolls[i -1] = to_rolls;
@@ -243,78 +230,40 @@ fn main() {
                 curr_hash = hash_rolls(&rolls, j);
             }
 
-            // print_rolls!();
-
+            // we'll check if we've seen this state before, if so found a loop
             let hash = hash_rolls(&rolls, j);
             let cached_val = cache.get(&hash);
             if cached_val.is_some() && cycle_break.is_none() {
-
-                let (cached_iter, cached_dir, cached_rolls) = cached_val.unwrap();
+                // figure out the cycle of the loop we'd be on at the end of the iters
+                // and then break out of loop at that part of cycle
+                let cached_iter = cached_val.unwrap();
                 let loop_len = i - cached_iter;
-                // println!("found cached value at iter {} dir {} len = {}", i, j, loop_len);
                 let remaining_iters = iters - i;
                 let loop_iter_at_end = remaining_iters % loop_len;
                 cycle_break = Some(i + loop_iter_at_end - 1 );
             }
-            cache.put(hash, (i, j, rolls.clone()));
+            cache.put(hash, i);
 
-            rotate_right_3!(rolls, scratch_rolls, width);
+            rotate_right!(rolls, scratch_rolls, width);
             let tmp_rolls = rolls;
             rolls = scratch_rolls;
             scratch_rolls = tmp_rolls;
 
-            rotate_right_3!(hashes, scratch_hashes, width);
+            rotate_right!(hashes, scratch_hashes, width);
             let tmp_hashes = hashes;
             hashes = scratch_hashes;
             scratch_hashes = tmp_hashes;
-
-            // println!("rotation = {}", j);
-            // print_rolls!();
-            // println!("")
         }
 
-        // println!("cycle {} weight = {}", i, calculate_weight(rolls.clone(), width));
 
         if Some(i) == cycle_break {
             break;
         }
     }
 
-    // roll everything back to the top
-    // let mut prev_hash = 0;
-    // let mut curr_hash = hash_rolls(&rolls, 0);
-    // while prev_hash != curr_hash {
-    //     let mut prev_rolls = wall_mask;
-    //     let mut prev_hashes = wall_mask;
-
-    //     for i in 0..width {
-    //         let (from_remains, to_rolls) = transfer_2(rolls[i], prev_hashes, prev_rolls);
-    //         rolls[i] = from_remains;
-    //         if i > 0 {
-    //             rolls[i -1] = to_rolls;
-    //         }
-    //         prev_rolls = rolls[i];
-    //         prev_hashes = hashes[i];
-    //     }
-    //     prev_hash = curr_hash;
-    //     curr_hash = hash_rolls(&rolls, 0);
-    // }
-
-
-    // print_rolls!();
 
     // calculate weight
-    rotate_right_3!(rolls, scratch_rolls, width);
-    let mut total_weight = 0;
-    for digit in 0..width {
-        for row_idx in 0..width {
-            let bit = scratch_rolls[row_idx] & 1;
-            if bit == 1 {
-                total_weight += width - digit;
-            }
-            scratch_rolls[row_idx] >>= 1;
-        }
-    }
-    println!("p2 total weight = {}", total_weight);
+    let total_weight = calculate_weight(rolls, width);
+    println!("p2 total = {}", total_weight);
 
 }
