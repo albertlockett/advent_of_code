@@ -94,22 +94,6 @@ fn transfer(from: &Row, to: &Row) -> (u128, u128) {
     return (from_remains, transfer_mask | to.roll_mask);
 }
 
-fn rotate_right(mut rows: Vec<u128>, width: usize) -> Vec<u128> {
-    let mut new_rows = vec![0 as u128; width];
-
-    for col in 0..width {
-        let mut new_row = 0;
-        for i in 0..rows.len() {
-            let bit = rows[i] & 1;
-            new_row += bit << i;
-            rows[i] >>= 1;
-        }
-        new_rows[width - col - 1] = new_row;
-    } 
-
-    new_rows
-}
-
 // returns a bitmap of the rolling rocks for from and to after transfer
 #[inline(always)]
 fn transfer_2(from_roll_mask: u128, to_hash_mask: u128, to_roll_mask: u128) -> (u128, u128) {
@@ -123,18 +107,6 @@ fn transfer_2(from_roll_mask: u128, to_hash_mask: u128, to_roll_mask: u128) -> (
     let from_remains = from_roll_mask & !transfer_mask;
 
     return (from_remains, transfer_mask | to_roll_mask);
-}
-
-fn rotate_right_2(mut from_rows: &mut Vec<u128>, mut into_rows: &mut Vec<u128>, width: usize) {
-    for col in 0..width {
-        let mut new_row = 0;
-        for i in 0..from_rows.len() {
-            let bit = from_rows[i] & 1;
-            new_row += bit << i;
-            from_rows[i] >>= 1;
-        }
-        into_rows[width - col - 1] = new_row;
-    }
 }
 
 macro_rules! rotate_right_3 {
@@ -158,6 +130,23 @@ fn hash_rolls(rolls: &Vec<u128>, dir: u8) -> u64 {
         hasher.write(&rolls[i].to_le_bytes());
     }
     hasher.finish()
+}
+
+fn calculate_weight(mut rolls1: Vec<u128>, width: usize) -> u32 {
+    let mut rolls = rolls1.clone();
+    rotate_right_3!(rolls1, rolls, width);
+    let mut total_weight = 0;
+    for digit in 0..width {
+        for row_idx in 0..width {
+            let bit = rolls[row_idx] & 1;
+            if bit == 1 {
+                total_weight += width - digit;
+            }
+            rolls[row_idx] >>= 1;
+        }
+    }
+
+    total_weight as u32
 }
 
 fn main() {
@@ -193,26 +182,46 @@ fn main() {
     let mut rolls = rows.iter().map(|r| r.roll_mask).collect::<Vec<u128>>();
     let mut hashes = rows.iter().map(|r| r.hash_mask).collect::<Vec<u128>>();
 
+    macro_rules! print_rolls {
+        () => {
+            for row in 0..width {
+                let mut chars = vec![];
+                let mut roll = rolls[row];
+                let mut hash = hashes[row];
+        
+                for _ in 0..width {
+                    let roll_bit = roll & 1;
+                    let hash_bit = hash & 1;
+                    roll >>= 1;
+                    hash >>= 1;
+                    match (roll_bit, hash_bit) {
+                        (1, 1) => chars.push('#'),
+                        (1, 0) => chars.push('O'),
+                        (0, 1) => chars.push('#'),
+                        (0, 0) => chars.push('.'),
+                        _ => panic!("invalid bit"),
+                    }
+                }
+                println!("{}", chars.iter().rev().collect::<String>());
+            }
+        };
+    }
+
     let mut scratch_rolls = vec![0 as u128; width];
     let mut scratch_hashes = vec![0 as u128; width];
     
-    let mut cache = LruCache::<u64, (u8, Vec<u128>)>::new(NonZeroUsize::new(500_000_000).unwrap());
+    let mut cache = LruCache::<u64, (u64, u8, Vec<u128>)>::new(NonZeroUsize::new(500_000_000).unwrap());
 
     let iters = 1000000000; // 1 billion
+    // let iters = 100;
     let start = std::time::Instant::now();
 
+    let mut cycle_break = None;
 
     for i in 0..iters {
-        if i % 10000 == 0 {
-            let elapsed = start.elapsed().as_millis();
-            let iter_per_second = i as f64 / elapsed as f64 * 1000.0;
-            let finish_seconds = (iters - i) as f64 / iter_per_second;
-            let percent_done = i as f64 / iters as f64 * 100.0;
-            println!("{:.5}%: {} / {} iters = {:.5} iter/second  finish in {:.5}s = {:.5}hours", percent_done, i, iters, iter_per_second, finish_seconds, finish_seconds / 3600.0);
-        }
 
-        let mut cache_hit = false;
 
+       
         for j in 0..4 {
             // roll the rocks as far as they can go
             let mut prev_hash = 0;
@@ -234,13 +243,20 @@ fn main() {
                 curr_hash = hash_rolls(&rolls, j);
             }
 
+            // print_rolls!();
+
             let hash = hash_rolls(&rolls, j);
             let cached_val = cache.get(&hash);
-            if cached_val.is_some() {
-                println!("found cached value at iter {} dir {}", i, j);
-                cache_hit = true;
+            if cached_val.is_some() && cycle_break.is_none() {
+
+                let (cached_iter, cached_dir, cached_rolls) = cached_val.unwrap();
+                let loop_len = i - cached_iter;
+                // println!("found cached value at iter {} dir {} len = {}", i, j, loop_len);
+                let remaining_iters = iters - i;
+                let loop_iter_at_end = remaining_iters % loop_len;
+                cycle_break = Some(i + loop_iter_at_end - 1 );
             }
-            cache.put(hash, (j, rolls.clone()));
+            cache.put(hash, (i, j, rolls.clone()));
 
             rotate_right_3!(rolls, scratch_rolls, width);
             let tmp_rolls = rolls;
@@ -251,37 +267,41 @@ fn main() {
             let tmp_hashes = hashes;
             hashes = scratch_hashes;
             scratch_hashes = tmp_hashes;
+
+            // println!("rotation = {}", j);
+            // print_rolls!();
+            // println!("")
         }
 
-        if cache_hit {
+        // println!("cycle {} weight = {}", i, calculate_weight(rolls.clone(), width));
+
+        if Some(i) == cycle_break {
             break;
         }
     }
 
     // roll everything back to the top
-    let mut prev_hash = 0;
-    let mut curr_hash = hash_rolls(&rolls, 0);
-    while prev_hash != curr_hash {
-        let mut prev_rolls = wall_mask;
-        let mut prev_hashes = wall_mask;
+    // let mut prev_hash = 0;
+    // let mut curr_hash = hash_rolls(&rolls, 0);
+    // while prev_hash != curr_hash {
+    //     let mut prev_rolls = wall_mask;
+    //     let mut prev_hashes = wall_mask;
 
-        for i in 0..width {
-            let (from_remains, to_rolls) = transfer_2(rolls[i], prev_hashes, prev_rolls);
-            rolls[i] = from_remains;
-            if i > 0 {
-                rolls[i -1] = to_rolls;
-            }
-            prev_rolls = rolls[i];
-            prev_hashes = hashes[i];
-        }
-        prev_hash = curr_hash;
-        curr_hash = hash_rolls(&rolls, 0);
-    }
+    //     for i in 0..width {
+    //         let (from_remains, to_rolls) = transfer_2(rolls[i], prev_hashes, prev_rolls);
+    //         rolls[i] = from_remains;
+    //         if i > 0 {
+    //             rolls[i -1] = to_rolls;
+    //         }
+    //         prev_rolls = rolls[i];
+    //         prev_hashes = hashes[i];
+    //     }
+    //     prev_hash = curr_hash;
+    //     curr_hash = hash_rolls(&rolls, 0);
+    // }
 
 
-    for roll in &rolls {
-        println!("{:#012b}", roll);
-    }
+    // print_rolls!();
 
     // calculate weight
     rotate_right_3!(rolls, scratch_rolls, width);
@@ -297,54 +317,4 @@ fn main() {
     }
     println!("p2 total weight = {}", total_weight);
 
-    println!("done");
-
-}
-
-#[cfg(test)]
-mod test {
-
-    #[test]
-    fn test_new_row() {
-        let row = super::Row::new("..O#O.#");
-        assert_eq!(row.roll_mask, 0b010100);
-        assert_eq!(row.hash_mask, 0b001001);
-    }
-
-    #[test]
-    fn test_transfer() {
-        let fr = super::Row::new("...OOO###");
-        let to = super::Row::new("....#O.#O");
-        let expected_from_remain = 0b011000;
-        let expected_to_rollssss = 0b101001;
-        let (from_remains, to_rolls) = super::transfer(&fr, &to);
-        assert_eq!(from_remains, expected_from_remain);
-        assert_eq!(to_rolls, expected_to_rollssss);
-    }
-
-    #[test]
-    fn test_rotate() {
-        let rows = vec![
-            0b1001,
-            0b1100,
-            0b1010,
-            0b1111,
-        ];
-        for row in rows.iter() {
-            println!("{:b}", row);
-        }
-        let expected = vec![
-            0b1111,
-            0b1010,
-            0b1100,
-            0b1001,
-        ];
-        let rotated = super::rotate_right(rows.clone(), 4);
-
-        println!("\n");
-        for row in rotated.iter() {
-            println!("{:b}", row);
-        }
-        assert_eq!(rotated, expected);
-    }
 }
