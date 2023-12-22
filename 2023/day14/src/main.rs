@@ -1,7 +1,7 @@
 use std::fs::File;
-use std::num::NonZeroUsize;
-use std::io::prelude::*;
 use std::hash::Hasher;
+use std::io::prelude::*;
+use std::num::NonZeroUsize;
 
 use lru::LruCache;
 
@@ -27,17 +27,20 @@ mod part1 {
                         sections.push((curr_offset, curr_section));
                         curr_section = Section { num_rocks: 0 };
                         curr_offset = row_num as i16;
-                    },
+                    }
                     Some('O') => {
                         curr_section.num_rocks += 1;
-                    },
-                    Some('.') => {},
+                    }
+                    Some('.') => {}
                     _ => panic!("Invalid character in input"),
-                }    
+                }
             }
             sections.push((curr_offset, curr_section));
 
-            Column { sections, length: rows.len() as i16 }
+            Column {
+                sections,
+                length: rows.len() as i16,
+            }
         }
 
         pub fn calc_weight(&self) -> u32 {
@@ -54,7 +57,6 @@ mod part1 {
         }
     }
 }
-
 
 struct Row {
     roll_mask: u128,
@@ -76,7 +78,10 @@ impl Row {
             }
         }
 
-        Row { roll_mask, hash_mask }
+        Row {
+            roll_mask,
+            hash_mask,
+        }
     }
 }
 
@@ -84,7 +89,7 @@ impl Row {
 #[inline(always)]
 fn transfer(from_roll_mask: u128, to_hash_mask: u128, to_roll_mask: u128) -> (u128, u128) {
     // where we're blocked from transfering rolls
-    let to_mask = to_hash_mask | to_roll_mask; 
+    let to_mask = to_hash_mask | to_roll_mask;
 
     // what rolls to next mask
     let transfer_mask = from_roll_mask & !to_mask;
@@ -110,7 +115,7 @@ macro_rules! rotate_right {
 }
 
 fn hash_rolls(rolls: &Vec<u128>, dir: u8) -> u64 {
-    let mut hasher =  std::collections::hash_map::DefaultHasher::new();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
     hasher.write(&vec![dir]);
     for i in 0..rolls.len() {
         hasher.write(&rolls[i].to_le_bytes());
@@ -138,7 +143,8 @@ fn calculate_weight(mut rolls1: Vec<u128>, width: usize) -> u32 {
 fn main() {
     let mut file = File::open("input.txt").expect("File not found");
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Error reading file");
+    file.read_to_string(&mut contents)
+        .expect("Error reading file");
 
     let lines: Vec<String> = contents.split("\n").map(|s| s.to_string()).collect();
     let width = lines[0].len();
@@ -155,7 +161,6 @@ fn main() {
     println!("p1 total = {}", p1_total);
 
     // part 2
-
 
     let mut rows = vec![];
     rows.append(&mut lines.iter().map(|s| Row::new(&s)).collect::<Vec<Row>>());
@@ -183,7 +188,7 @@ fn main() {
                 let mut chars = vec![];
                 let mut roll = rolls[row];
                 let mut hash = hashes[row];
-        
+
                 for _ in 0..width {
                     let roll_bit = roll & 1;
                     let hash_bit = hash & 1;
@@ -201,7 +206,7 @@ fn main() {
             }
         };
     }
-    
+
     // cache for configurations we've seen before
     let mut cache = LruCache::<u64, u64>::new(NonZeroUsize::new(500_000_000).unwrap());
 
@@ -209,7 +214,7 @@ fn main() {
     let mut cycle_break = None;
     for i in 0..iters {
         // rotate all directions
-        for j in 0..4 { 
+        for j in 0..4 {
             // roll the rocks as far as they can go
             let mut prev_hash = 0;
             let mut curr_hash = hash_rolls(&rolls, j);
@@ -221,7 +226,7 @@ fn main() {
                     let (from_remains, to_rolls) = transfer(rolls[i], prev_hashes, prev_rolls);
                     rolls[i] = from_remains;
                     if i > 0 {
-                        rolls[i -1] = to_rolls;
+                        rolls[i - 1] = to_rolls;
                     }
                     prev_rolls = rolls[i];
                     prev_hashes = hashes[i];
@@ -240,7 +245,7 @@ fn main() {
                 let loop_len = i - cached_iter;
                 let remaining_iters = iters - i;
                 let loop_iter_at_end = remaining_iters % loop_len;
-                cycle_break = Some(i + loop_iter_at_end - 1 );
+                cycle_break = Some(i + loop_iter_at_end - 1);
             }
             cache.put(hash, i);
 
@@ -255,15 +260,12 @@ fn main() {
             scratch_hashes = tmp_hashes;
         }
 
-
         if Some(i) == cycle_break {
             break;
         }
     }
 
-
     // calculate weight
     let total_weight = calculate_weight(rolls, width);
     println!("p2 total = {}", total_weight);
-
 }
