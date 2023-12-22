@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-
 struct Grid {
     width: u32,
     height: u32,
@@ -37,26 +36,9 @@ impl Grid {
         self.height = tmp;
     }
 
-    fn transpose_back(&mut self) {
-        let mut new_data = Vec::<String>::with_capacity(self.width as usize);
-
-        for i in 0..self.width {
-            let mut new_row = String::with_capacity(self.height as usize);
-            for j in 0..self.height {
-                new_row.push(self.data_raw[j as usize].chars().nth(i as usize).unwrap());
-            }
-            new_data.push(new_row);
-        }
-
-        self.data_raw = new_data;
-        let tmp = self.width;
-        self.width = self.height;
-        self.height = tmp;
-    }
-
     fn to_bitmaps(&self) -> Vec<u32> {
         let mut bitmaps: Vec<u32> = Vec::new();
-        for (i, row) in self.data_raw.iter().enumerate() {
+        for (_, row) in self.data_raw.iter().enumerate() {
             let mut bm_row: u32 = 0;
             for (_, c) in row.chars().enumerate() {
                 bm_row <<= 1;
@@ -66,58 +48,73 @@ impl Grid {
             }
             bitmaps.push(bm_row);
         }
+
         bitmaps
     }
 
     fn find_reflect(&self) -> Option<usize> {
         let bitmaps = self.to_bitmaps();
         let mut reflect = None;
-        for i in 1..(bitmaps.len() / 2 + 1) {
+        for i in 1..(bitmaps.len()) {
             let mut prev: i32 = (i - 1) as i32;
-            let mut curr= i;
+            let mut curr = i;
 
             if bitmaps[prev as usize] == bitmaps[curr] {
                 while prev >= 0 && curr < bitmaps.len() && bitmaps[prev as usize] == bitmaps[curr] {
                     prev -= 1;
                     curr += 1;
                 }
-                if (prev < 0 || curr == bitmaps.len()) {// && bitmaps[prev as usize] == bitmaps[curr] {
+                if prev < 0 || curr == bitmaps.len() {
                     reflect = Some(i);
-                    break
+                    break;
                 }
-                
             }
         }
+
         reflect
     }
 
+    fn find_all_reflects(&self) -> Vec<usize> {
+        let bitmaps = self.to_bitmaps();
+        let mut reflects = Vec::new();
+        for i in 1..(bitmaps.len()) {
+            let mut prev: i32 = (i - 1) as i32;
+            let mut curr = i;
+
+            if bitmaps[prev as usize] == bitmaps[curr] {
+                while prev >= 0 && curr < bitmaps.len() && bitmaps[prev as usize] == bitmaps[curr] {
+                    prev -= 1;
+                    curr += 1;
+                }
+                if (prev < 0 || curr == bitmaps.len()) {
+                    reflects.push(i);
+                }
+            }
+        }
+        
+        reflects
+    }
+
     fn find_smudges(&mut self) -> bool {
-        let orig_reflect = self.find_reflect();
+        let orig_reflects = self.find_all_reflects();
 
         let bitmaps = self.to_bitmaps();
         for i in 0..bitmaps.len() - 1 {
-            for j in i+1..bitmaps.len() {
+            for j in i + 1..bitmaps.len() {
                 let a = bitmaps[i];
                 let b = bitmaps[j];
                 if let Some(smudge) = smudge_find(a, b) {
-                    // println!("\nsmudge found at offset {}", smudge);
-                    // println!("{} i = {}", self.data_raw[i], i);
-                    // println!("{} j = {}", self.data_raw[j], j);
-                    
                     self.flip_smudge(i, smudge);
-                    let new_reflect = self.find_reflect();
-                    // println!("reflect: {:?} -> {:?}", orig_reflect, new_reflect);
-                    // println!("\n");
-                    if orig_reflect != new_reflect && new_reflect != None {
-                        // println!("reflect changed");
-                        // self.flip_smudge(i, smudge); // flip back
-                        return true
+                    let new_reflects = self.find_all_reflects();
+
+                    if orig_reflects != new_reflects && new_reflects.len() > 0 {
+                        return true;
                     }
                     self.flip_smudge(i, smudge); // flip backs
                 }
             }
         }
-        return false
+        return false;
     }
 
     fn flip_smudge(&mut self, line: usize, offset: usize) {
@@ -128,13 +125,14 @@ impl Grid {
             '.' => '#',
             _ => panic!("Invalid char"),
         };
-        row.replace_range(char_i..char_i+1, &new_char.to_string());
+        row.replace_range(char_i..char_i + 1, &new_char.to_string());
         self.data_raw[line] = row;
     }
 
     fn print(&self) {
-        for row in &self.data_raw {
-            println!("{}", row);
+        let bitmaps = self.to_bitmaps();
+        for (i, row) in self.data_raw.iter().enumerate() {
+            println!("{}\t{} {}", i, row, bitmaps[i]);
         }
     }
 }
@@ -142,7 +140,7 @@ impl Grid {
 fn smudge_find(a: u32, b: u32) -> Option<usize> {
     let mut diff = a ^ b;
     if diff == 0 {
-        return None
+        return None;
     }
 
     let mut digits = 0;
@@ -152,7 +150,7 @@ fn smudge_find(a: u32, b: u32) -> Option<usize> {
     }
     digits -= 1;
 
-    if 1<<digits == a ^ b {
+    if 1 << digits == a ^ b {
         Some(digits)
     } else {
         None
@@ -162,56 +160,67 @@ fn smudge_find(a: u32, b: u32) -> Option<usize> {
 fn main() {
     let mut file = File::open("input.txt").expect("File not found");
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Error reading file");
+    file.read_to_string(&mut contents)
+        .expect("Error reading file");
 
-    let grids = contents.split("\n\n").map(|s| Grid::new(s)).collect::<Vec<Grid>>();
+    let grids = contents
+        .split("\n\n")
+        .map(|s| Grid::new(s))
+        .collect::<Vec<Grid>>();
     println!("{:?}", grids.len());
 
     let mut p1_total = 0;
     let mut p2_total = 0;
     for mut grid in grids {
+        println!("\n\n");
         grid.print();
 
-        // Part 1
-        let h_reflect = grid.find_reflect();
+        // part 1
         grid.transpose();
         let v_reflect = grid.find_reflect();
-        if let Some(h_reflect) = h_reflect {
-            p1_total += (100 * h_reflect);
-        }
         if let Some(v_reflect) = v_reflect {
-            p1_total += v_reflect;
+            p1_total += v_reflect as u64;
         }
-        grid.transpose_back();
 
+        grid.transpose();
+        let h_reflect = grid.find_reflect();
+        if let Some(h_reflect) = h_reflect {
+            p1_total += (100 * h_reflect) as u64;
+        }
+
+        // reset
+        grid.transpose();
+        grid.transpose();
+
+        // part 2 ----
 
         let smudged = grid.find_smudges();
-        
         if !smudged {
             grid.transpose();
-            grid.find_smudges(); // TODO check smutdged
-            grid.transpose_back();
+            let smudged = grid.find_smudges();
+            if !smudged {
+                panic!("found no smudes");
+            }
+            grid.transpose();
         }
 
-        println!("after smudges ....");
-        grid.print();
+        // find all the new reflects after smudges fixed ...
 
-        let h_reflect = grid.find_reflect();
         grid.transpose();
-        let v_reflect = grid.find_reflect();
-
-        println!("h_reflect: {:?}, v_reflect: {:?}", h_reflect, v_reflect);
-        if let Some(h_reflect) = h_reflect {
-            println!("h_reflect: {}", h_reflect);
-            p2_total += (100 * h_reflect);
-        }
-        if let Some(v_reflect) = v_reflect {
-            println!("v_reflect: {}", v_reflect);
-            p2_total += v_reflect;
+        let v_reflects_2 = grid.find_all_reflects();
+        for vr2 in v_reflects_2 {
+            if Some(vr2) != v_reflect {
+                p2_total += vr2 as u64;
+            }
         }
 
-
-        println!("\n")
+        grid.transpose();
+        let h_reflects_2 = grid.find_all_reflects();
+        for hr2 in h_reflects_2 {
+            if Some(hr2) != h_reflect {
+                p2_total += (100 * hr2) as u64;
+            }
+        }
     }
 
     println!("Part 1: {}", p1_total);
@@ -223,13 +232,13 @@ mod test {
     #[test]
     fn test_grid() {
         let grid = super::Grid::new(
-"#...##..#
+            "#...##..#
 #....#..#
 ..##..###
 #####.##.
 #####.##.
 ..##..###
-#....#..#"
+#....#..#",
         );
         let reflect = grid.find_reflect();
         assert_eq!(reflect, Some(4));
@@ -238,13 +247,13 @@ mod test {
     #[test]
     fn test_grid2() {
         let mut grid = super::Grid::new(
-"#.##..##.
+            "#.##..##.
 ..#.##.#.
 ##......#
 ##......#
 ..#.##.#.
 ..##..##.
-#.#.##.#."
+#.#.##.#.",
         );
         let reflect = grid.find_reflect();
         assert_eq!(reflect, None);
