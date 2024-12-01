@@ -1,5 +1,5 @@
 use arrow::array::downcast_array;
-use arrow::compute::{sort, SortOptions};
+use arrow::compute::{concat_batches, sort, SortOptions};
 use arrow_array::{Int32Array, Int64Array, RecordBatch};
 use arrow_schema::{DataType, Field, Schema};
 use datafusion::execution::context::SessionContext;
@@ -29,7 +29,8 @@ lexer! {
     }
 }
 
-async fn do_it(input: &str) -> Result<i64> {
+async fn do_it(input: &str) -> Result<(i64, i64)> {
+    // parse input to arrow record batch
     let file = File::open(format!("inputs/day01/{}.txt", input))
         .await
         .unwrap();
@@ -68,23 +69,41 @@ async fn do_it(input: &str) -> Result<i64> {
     let record_batch =
         RecordBatch::try_new(schema.clone(), vec![Arc::new(locs_l), Arc::new(locs_r)])?;
 
+    // init datafusion context
     let ctx = SessionContext::new();
     ctx.register_batch("input", record_batch)?;
 
+    // part 1
     let result = ctx
         .sql("select sum(abs(loc_l - loc_r)) from input")
-        .await
-        .unwrap()
+        .await?
         .collect()
         .await?;
-    let locs_diff = downcast_array::<Int64Array>(result[0].column(0)).value(0);
+    let p1_result = downcast_array::<Int64Array>(result[0].column(0)).value(0);
 
-    Ok(locs_diff)
+    // part 2
+    let result = ctx
+        .sql("select loc_l, (select count(*) from input where loc_r = i2.loc_l) as count from input i2")
+        .await?
+        .collect()
+        .await?;
+    let schema = result[0].schema();
+    let result = concat_batches(&schema, &result)?;
+    ctx.register_batch("part2_sums", result)?;
+
+    let result = ctx
+        .sql("select sum(loc_l * count) from part2_sums")
+        .await?
+        .collect()
+        .await?;
+    let p2_result = downcast_array::<Int64Array>(result[0].column(0)).value(0);
+
+    Ok((p1_result, p2_result))
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("{}", do_it("test").await?);
-    println!("{}", do_it("real").await?);
+    println!("{:?}", do_it("test").await?);
+    println!("{:?}", do_it("real").await?);
     Ok(())
 }
