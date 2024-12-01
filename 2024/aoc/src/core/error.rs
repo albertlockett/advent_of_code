@@ -4,17 +4,17 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum Error {
     Arrow,
     Datafusion,
-    IO
+    IO,
 }
 
 impl From<std::io::Error> for Error {
-    fn from (val: std::io::Error) -> Self {
+    fn from(val: std::io::Error) -> Self {
         Self::IO
     }
 }
 
 impl From<arrow::error::ArrowError> for Error {
-    fn from (val: arrow::error::ArrowError) -> Self {
+    fn from(val: arrow::error::ArrowError) -> Self {
         Self::Arrow
     }
 }

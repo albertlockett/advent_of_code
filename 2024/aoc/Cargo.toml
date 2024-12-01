@@ -6,3 +6,4 @@ edition.workspace = true
 [dependencies]
 arrow.workspace = true
 datafusion.workspace = true
+plex.workspace = true
