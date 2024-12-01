@@ -83,19 +83,21 @@ async fn do_it(input: &str) -> Result<(i64, i64)> {
 
     // part 2
     let result = ctx
-        .sql("select loc_l, (select count(*) from input where loc_r = i2.loc_l) as count from input i2")
+        .sql("select loc_r, count(*) as count from input group by loc_r")
         .await?
         .collect()
         .await?;
+
     let schema = result[0].schema();
     let result = concat_batches(&schema, &result)?;
-    ctx.register_batch("part2_sums", result)?;
+    ctx.register_batch("count_loc_2", result)?;
 
     let result = ctx
-        .sql("select sum(loc_l * count) from part2_sums")
+        .sql("select sum(loc_l * count) from input inner join count_loc_2 on input.loc_l == count_loc_2.loc_r")
         .await?
         .collect()
         .await?;
+
     let p2_result = downcast_array::<Int64Array>(result[0].column(0)).value(0);
 
     Ok((p1_result, p2_result))
