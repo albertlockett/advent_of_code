@@ -1084,6 +1084,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "day02"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+ "arrow",
+ "arrow-array",
+ "arrow-schema",
+ "datafusion",
+ "plex",
+ "tokio",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

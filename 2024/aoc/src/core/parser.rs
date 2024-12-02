@@ -26,3 +26,27 @@ impl<T> Iterator for Lexer<'_, T> {
         }
     }
 }
+
+pub mod numberic {
+    use plex::lexer;
+
+    pub enum Token {
+        Whitespace,
+        EndLine,
+        Number(i32),
+    }
+
+    lexer! {
+        pub fn next_token(text: 'a) -> Token;
+        r#"[\n]"# => Token::EndLine,
+        r#"[ ]+"# => Token::Whitespace,
+        r#"[0-9]+"# => {
+            if let Ok(i) = text.parse() {
+                Token::Number(i)
+            } else {
+                panic!("integer {} is out of range", text)
+            }
+        }
+
+    }
+}
