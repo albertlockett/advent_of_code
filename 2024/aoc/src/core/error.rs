@@ -8,19 +8,19 @@ pub enum Error {
 }
 
 impl From<std::io::Error> for Error {
-    fn from(val: std::io::Error) -> Self {
+    fn from(_val: std::io::Error) -> Self {
         Self::IO
     }
 }
 
 impl From<arrow::error::ArrowError> for Error {
-    fn from(val: arrow::error::ArrowError) -> Self {
+    fn from(_val: arrow::error::ArrowError) -> Self {
         Self::Arrow
     }
 }
 
 impl From<datafusion::error::DataFusionError> for Error {
-    fn from(val: datafusion::error::DataFusionError) -> Self {
+    fn from(_val: datafusion::error::DataFusionError) -> Self {
         Self::Datafusion
     }
 }
