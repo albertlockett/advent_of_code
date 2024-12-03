@@ -4,9 +4,15 @@ use arrow::datatypes::{DataType, Field, Schema};
 use arrow_array::{Int32Array, RecordBatch};
 use datafusion::prelude::SessionContext;
 use plex::lexer;
-use tokio::{fs::File, io::{AsyncBufReadExt, BufReader}};
+use tokio::{
+    fs::File,
+    io::{AsyncBufReadExt, BufReader},
+};
 
-use aoc::core::parser::{numberic::{self}, Lexer};
+use aoc::core::parser::{
+    numberic::{self},
+    Lexer,
+};
 
 #[derive(Debug)]
 enum Token {
@@ -49,7 +55,7 @@ lexer! {
                 panic!("bad text {}", text)
             }
         }
-        
+
     },
     "." => Token::Crap
 }
@@ -63,12 +69,12 @@ async fn main() {
     while let Some(line) = lines.next_line().await.unwrap() {
         for token in Lexer::<Token>::new(&line, Box::new(next_token)) {
             match token {
-                Token::Mul(i1,i2) => {
+                Token::Mul(i1, i2) => {
                     if mult_enabled {
                         left_builder.append_value(i1);
                         right_builder.append_value(i2);
                     }
-                },
+                }
                 Token::Do => mult_enabled = true,
                 Token::Dont => mult_enabled = false,
                 _ => {}
@@ -78,18 +84,23 @@ async fn main() {
 
     let schema = Arc::new(Schema::new(vec![
         Field::new("left", DataType::Int32, false),
-        Field::new("right", DataType::Int32, false)
+        Field::new("right", DataType::Int32, false),
     ]));
 
-    let record_batch = RecordBatch::try_new(schema.clone(), vec![
-        Arc::new(left_builder.finish()),
-        Arc::new(right_builder.finish())
-    ]).unwrap();
+    let record_batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(left_builder.finish()),
+            Arc::new(right_builder.finish()),
+        ],
+    )
+    .unwrap();
 
     let ctx = SessionContext::new();
     ctx.register_batch("input", record_batch).unwrap();
 
-    let result = ctx.sql("select sum(left * right) from input")
+    let result = ctx
+        .sql("select sum(left * right) from input")
         .await
         .unwrap()
         .collect()
