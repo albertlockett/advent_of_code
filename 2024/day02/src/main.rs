@@ -75,7 +75,7 @@ async fn main() {
     let input_iter = InputIter {
         schema,
         lines: BufReader::new(File::open("inputs/day02/real.txt").unwrap()).lines(),
-        bath_size: 10,
+        bath_size: 2000,
     };
 
     let checker = Arc::new(|args: &[ColumnarValue]| {

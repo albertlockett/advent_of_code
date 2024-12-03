@@ -1,0 +1,12 @@
+[package]
+name = "day03"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+aoc.workspace = true
+arrow.workspace = true
+arrow-array.workspace = true
+datafusion.workspace = true
+plex.workspace = true
+tokio.workspace = true

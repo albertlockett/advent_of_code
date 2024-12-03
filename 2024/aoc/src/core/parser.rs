@@ -34,6 +34,7 @@ pub mod numberic {
         Whitespace,
         EndLine,
         Number(i32),
+        Other,
     }
 
     lexer! {
@@ -47,6 +48,7 @@ pub mod numberic {
                 panic!("integer {} is out of range", text)
             }
         }
+        "." => Token::Other,
 
     }
 }
