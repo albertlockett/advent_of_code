@@ -44,7 +44,7 @@ async fn do_it(input: &str) -> Result<(i64, i64)> {
         let f = |e| next_token(e);
         let mut lexer = Lexer::<Token>::new(&line, Box::new(f));
         match (lexer.next(), lexer.next(), lexer.next()) {
-            (Some(Token::Location(left)), _, Some(Token::Location(right))) => {
+            (Some((Token::Location(left), _)), _, Some((Token::Location(right), _))) => {
                 loc_builder_l.append_value(left);
                 loc_builder_r.append_value(right);
             }

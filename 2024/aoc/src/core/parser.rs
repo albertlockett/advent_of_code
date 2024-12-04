@@ -1,4 +1,11 @@
+#[derive(Debug, Clone, Copy)]
+pub struct Span {
+    pub lo: usize,
+    pub hi: usize,
+}
+
 pub struct Lexer<'a, T> {
+    original: &'a str,
     remaining: &'a str,
     next_token: Box<dyn Fn(&'a str) -> Option<(T, &'a str)>>,
 }
@@ -9,6 +16,7 @@ impl<'a, T> Lexer<'a, T> {
         next_token: Box<dyn Fn(&'a str) -> Option<(T, &'a str)>>,
     ) -> Lexer<'a, T> {
         Lexer::<T> {
+            original: s,
             remaining: s,
             next_token,
         }
@@ -16,11 +24,13 @@ impl<'a, T> Lexer<'a, T> {
 }
 
 impl<T> Iterator for Lexer<'_, T> {
-    type Item = T;
-    fn next(&mut self) -> Option<T> {
+    type Item = (T, Span);
+    fn next(&mut self) -> Option<(T, Span)> {
         if let Some((tok, new_remaining)) = (self.next_token)(self.remaining) {
+            let lo = self.original.len() - self.remaining.len();
+            let hi = self.original.len() - new_remaining.len();
             self.remaining = new_remaining;
-            Some(tok)
+            Some((tok, Span { lo, hi }))
         } else {
             None
         }

@@ -40,7 +40,7 @@ impl Iterator for InputIter {
             let lexer = Lexer::<Token>::new(&line, Box::new(next_token));
 
             for token in lexer {
-                if let Token::Number(i) = token {
+                if let (Token::Number(i), _) = token {
                     list_array_builder.values().append_value(i)
                 }
             }

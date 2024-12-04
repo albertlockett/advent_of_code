@@ -1,0 +1,10 @@
+[package]
+name = "day04"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+arrow-array.workspace = true
+arrow-schema.workspace = true
+datafusion.workspace = true
+tokio.workspace = true
