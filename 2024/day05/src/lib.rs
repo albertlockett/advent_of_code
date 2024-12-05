@@ -14,7 +14,6 @@ fn to_page_num(input: &[u8], i: usize) -> u8 {
     (input[i] - 48) * 10 + (input[i + 1] - 48)
 }
 
-
 // check if update is valid
 #[inline]
 fn is_valid(update: &mut [u8], masks: &[u8]) -> bool {
@@ -24,7 +23,7 @@ fn is_valid(update: &mut [u8], masks: &[u8]) -> bool {
 
         let (idx, bit) = mask_coords(l, r);
         if masks[idx] & 1 << bit == 0 {
-            return false
+            return false;
         }
     }
 
@@ -36,7 +35,8 @@ fn rearrange_until_valid(update: &mut [u8], masks: &[u8]) {
     let mut valid = false;
     while !valid {
         valid = true;
-        for l_idx in 0..update.len() - 1 {
+        // only needs to be valid up until the mid point
+        for l_idx in 0..update.len() / 2 + 1 {
             for r_idx in l_idx + 1..update.len() {
                 let l = update[l_idx];
                 let r = update[r_idx];
