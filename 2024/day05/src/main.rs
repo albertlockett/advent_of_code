@@ -1,16 +1,62 @@
-use std::sync::Arc;
+// coordinates for valid rule bitmask
+#[inline]
+fn mask_coords(l: u8, r: u8) -> (usize, u8) {
+    let offset = r / 8;
+    let bit = r % 8;
+    let idx = l as usize * 13 + offset as usize;
 
-use arrow::{
-    array::downcast_array,
-    compute::kernels::bitwise::{bitwise_and, bitwise_shift_left},
-    util::pretty::print_batches,
-};
-use arrow_array::{RecordBatch, UInt16Array, UInt8Array};
-use arrow_schema::{DataType, Field, Schema};
-use datafusion::prelude::SessionContext;
+    (idx, bit)
+}
 
-#[tokio::main]
-async fn main() {
+// convert chars to page number
+#[inline]
+fn to_page_num(input: &[u8], i: usize) -> u8 {
+    (input[i] - 48) * 10 + (input[i + 1] - 48)
+}
+
+enum Valid {
+    Yes,
+    // these are indices in an update that are invalid
+    No(usize, usize),
+}
+
+// check if update is valid
+#[inline]
+fn is_valid(update: &mut [u8], masks: &[u8]) -> Valid {
+    for l_idx in 0..update.len() - 1 {
+        for r_idx in l_idx + 1..update.len() {
+            let l = update[l_idx];
+            let r = update[r_idx];
+
+            let (idx, bit) = mask_coords(l, r);
+            if masks[idx] & 1 << bit == 0 {
+                return Valid::No(l_idx, r_idx);
+            }
+        }
+    }
+
+    Valid::Yes
+}
+
+#[inline]
+fn rearrange_until_valid(update: &mut [u8], masks: &[u8]) {
+    let mut valid = false;
+    while !valid {
+        match is_valid(update, masks) {
+            Valid::No(l_idx, r_idx) => {
+                update.swap(l_idx, r_idx);
+            }
+            Valid::Yes => valid = true,
+        }
+    }
+}
+
+#[inline]
+fn mid(update: &mut [u8]) -> u8 {
+    *update.get(update.len() / 2).unwrap()
+}
+
+fn main() {
     let input_p1 = include_bytes!("../../inputs/day05/real_p1.txt");
     let input_p2 = include_bytes!("../../inputs/day05/real_p2.txt");
 
@@ -18,29 +64,24 @@ async fn main() {
 
     let mut i = 0;
     while i < input_p1.len() {
-        let l = (input_p1[i] - 48) * 10 + (input_p1[i + 1] - 48);
-        let r = (input_p1[i + 3] - 48) * 10 + (input_p1[i + 4] - 48);
+        let l = to_page_num(input_p1, i);
+        let r = to_page_num(input_p1, i + 3);
+        let (idx, bit) = mask_coords(l, r);
 
-        let mask_offset = r / 8;
-        let mask_bit = r % 8;
-
-        masks[l as usize * 13 + mask_offset as usize] |= 1 << mask_bit;
+        masks[idx] |= 1 << bit;
         i += 6;
     }
 
     let mut i = 0;
-    let mut update_rank = 0;
-
-    let mut rank_builder = UInt16Array::builder(0);
-    let mut lval_builder = UInt8Array::builder(0);
-    let mut mask_bit_builder = UInt8Array::builder(0);
-    let mut mask_builder = UInt8Array::builder(0);
-
-    let mut mid_vals: Vec<u8> = vec![];
     let mut curr_update: Vec<u8> = vec![];
 
+    let mut updates = vec![];
+
     loop {
-        let l = (input_p2[i] - 48) * 10 + (input_p2[i + 1] - 48);
+        if i + 1 > input_p2.len() {
+            break;
+        }
+        let l = to_page_num(input_p2, i);
         i += 2;
         curr_update.push(l);
 
@@ -51,20 +92,10 @@ async fn main() {
         i += 1;
         match c {
             b',' => {
-                let r = (input_p2[i] - 48) * 10 + (input_p2[i + 1] - 48);
-                let mask_offset = r / 8;
-                let mask_bit = r % 8;
-                let mask = masks[l as usize * 13 + mask_offset as usize];
-                rank_builder.append_value(update_rank);
-                lval_builder.append_value(l);
-                mask_bit_builder.append_value(mask_bit);
-                mask_builder.append_value(mask);
+                // pass
             }
             b'\n' => {
-                update_rank += 1;
-
-                let mid_val = curr_update.get(curr_update.len() / 2);
-                mid_vals.push(*mid_val.unwrap());
+                updates.push(curr_update.clone());
                 curr_update.clear();
             }
             c => {
@@ -74,52 +105,20 @@ async fn main() {
         }
     }
 
-    let ranks = rank_builder.finish();
-    let lvals = lval_builder.finish();
-    let mask_bits = mask_bit_builder.finish();
-    let masks = mask_builder.finish();
+    let mut p1_total: u32 = 0;
+    let mut p2_total: u32 = 0;
+    for mut update in updates {
+        match is_valid(&mut update, &masks) {
+            Valid::Yes => {
+                p1_total += mid(&mut update) as u32;
+            }
+            Valid::No(_, _) => {
+                rearrange_until_valid(&mut update, &masks);
+                p2_total += mid(&mut update) as u32;
+            }
+        }
+    }
 
-    let rule_check = bitwise_and(
-        &masks,
-        &bitwise_shift_left(&UInt8Array::from(vec![1u8; ranks.len()]), &mask_bits).unwrap(),
-    )
-    .unwrap();
-
-    let ctx = SessionContext::new();
-
-    let schema = Schema::new(vec![
-        Field::new("rank", DataType::UInt16, false),
-        Field::new("lvalue", DataType::UInt8, false),
-        Field::new("ok", DataType::UInt8, false),
-    ]);
-
-    ctx.register_batch(
-        "update_checks",
-        RecordBatch::try_new(
-            Arc::new(schema),
-            vec![Arc::new(ranks), Arc::new(lvals), Arc::new(rule_check)],
-        )
-        .unwrap(),
-    )
-    .unwrap();
-
-    let result = ctx
-        .sql("select rank from update_checks group by rank having min(ok) > 0")
-        .await
-        .unwrap()
-        .collect()
-        .await
-        .unwrap();
-
-    let p1_result_total: u32 = result
-        .iter()
-        .map(|batch| {
-            downcast_array::<UInt16Array>(batch.column_by_name("rank").unwrap())
-                .iter()
-                .map(|rank| mid_vals[rank.unwrap() as usize] as u32)
-                .sum::<u32>()
-        })
-        .sum::<u32>();
-
-    println!("part 1 = {}", p1_result_total);
+    println!("p1 = {}", p1_total);
+    println!("p2 = {}", p2_total);
 }
