@@ -1,9 +1,13 @@
+const MASK_BYTES_PER_PAGE: usize = 32;
+const MAX_INPUT: usize = 192;
+
 // coordinates for valid rule bitmask
 #[inline]
 fn mask_coords(l: u8, r: u8) -> (usize, u8) {
-    let offset = r / 8;
+    let offset = r >> 3;
     let bit = r % 8;
-    let idx = l as usize * 13 + offset as usize;
+
+    let idx = ((l as usize) << 5) + offset as usize;
 
     (idx, bit)
 }
@@ -11,7 +15,12 @@ fn mask_coords(l: u8, r: u8) -> (usize, u8) {
 // convert chars to page number
 #[inline]
 fn to_page_num(input: &[u8], i: usize) -> u8 {
-    (input[i] - 48) * 10 + (input[i + 1] - 48)
+    ((input[i] & 0b1111) << 4) | ((input[i + 1]) & 0b1111)
+}
+
+#[inline]
+fn to_real(page_num: u8) -> u8 {
+    (page_num >> 4) * 10 + (page_num & 0b1111)
 }
 
 // check if update is valid
@@ -61,7 +70,7 @@ pub fn doit() -> (u32, u32) {
     let input_p1 = include_bytes!("../../inputs/day05/real_p1.txt");
     let input_p2 = include_bytes!("../../inputs/day05/real_p2.txt");
 
-    let mut masks = vec![0u8; 100 * 13];
+    let mut masks = vec![0u8; (MAX_INPUT + 2) * MASK_BYTES_PER_PAGE];
 
     let mut i = 0;
     while i < input_p1.len() {
@@ -90,10 +99,10 @@ pub fn doit() -> (u32, u32) {
         i += 1;
         if c == b'\n' {
             if is_valid(&mut update, &masks) {
-                p1_total += mid(&mut update) as u32;
+                p1_total += to_real(mid(&mut update)) as u32;
             } else {
                 rearrange_until_valid(&mut update, &masks);
-                p2_total += mid(&mut update) as u32;
+                p2_total += to_real(mid(&mut update)) as u32;
             }
 
             update.clear();
@@ -105,4 +114,30 @@ pub fn doit() -> (u32, u32) {
     }
 
     (p1_total, p2_total)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_to_num() {
+        for i in 0..10 {
+            let n = format!("0{}", i);
+            let bytes = n.as_bytes();
+            let pn = to_page_num(&bytes, 0);
+            let real = to_real(pn);
+            println!("n = {} = {} ({:b}) = {}", n, pn, pn, real);
+            assert_eq!(real, i)
+        }
+
+        for i in 10..100 {
+            let n = format!("{}", i);
+            let bytes = n.as_bytes();
+            let pn = to_page_num(&bytes, 0);
+            let real = to_real(pn);
+            println!("n = {} = {} ({:b}) = {}", n, pn, pn, real);
+            assert_eq!(real, i)
+        }
+    }
 }
