@@ -14,6 +14,7 @@ fn to_page_num(input: &[u8], i: usize) -> u8 {
     (input[i] - 48) * 10 + (input[i + 1] - 48)
 }
 
+#[derive(PartialEq)]
 enum Valid {
     Yes,
     // these are indices in an update that are invalid
@@ -40,14 +41,8 @@ fn is_valid(update: &mut [u8], masks: &[u8]) -> Valid {
 
 #[inline]
 fn rearrange_until_valid(update: &mut [u8], masks: &[u8]) {
-    let mut valid = false;
-    while !valid {
-        match is_valid(update, masks) {
-            Valid::No(l_idx, r_idx) => {
-                update.swap(l_idx, r_idx);
-            }
-            Valid::Yes => valid = true,
-        }
+    while let Valid::No(l_idx, r_idx) = is_valid(update, masks) {
+        update.swap(l_idx, r_idx);
     }
 }
 
@@ -88,35 +83,21 @@ pub fn doit() -> (u32, u32) {
         }
         let c = input_p2[i];
         i += 1;
-        match c {
-            b',' => {
-                // pass
+        if c == b'\n' {
+            if is_valid(&mut update, &masks) == Valid::Yes {
+                p1_total += mid(&mut update) as u32;
+            } else {
+                rearrange_until_valid(&mut update, &masks);
+                p2_total += mid(&mut update) as u32;
             }
-            b'\n' => {
-                match is_valid(&mut update, &masks) {
-                    Valid::Yes => {
-                        p1_total += mid(&mut update) as u32;
-                    }
-                    Valid::No(_, _) => {
-                        rearrange_until_valid(&mut update, &masks);
-                        p2_total += mid(&mut update) as u32;
-                    }
-                }
 
-                update.clear();
-            }
-            c => {
-                println!("Invalid input {}", c);
-                break;
-            }
+            update.clear();
         }
+
         if i + 1 > input_p2.len() {
             break;
         }
     }
 
-    // println!("p1 = {}", p1_total);
-    // println!("p2 = {}", p2_total);
     (p1_total, p2_total)
 }
-
