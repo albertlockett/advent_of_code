@@ -41,8 +41,26 @@ fn is_valid(update: &mut [u8], masks: &[u8]) -> Valid {
 
 #[inline]
 fn rearrange_until_valid(update: &mut [u8], masks: &[u8]) {
-    while let Valid::No(l_idx, r_idx) = is_valid(update, masks) {
-        update.swap(l_idx, r_idx);
+    // this code is simpler, but is about 90% slower
+    // while let Valid::No(l_idx, r_idx) = is_valid(update, masks) {
+    //     update.swap(l_idx, r_idx);
+    // }
+
+    let mut valid = false;
+    while !valid {
+        valid = true;
+        for l_idx in 0..update.len() - 1 {
+            for r_idx in l_idx + 1..update.len() {
+                let l = update[l_idx];
+                let r = update[r_idx];
+
+                let (idx, bit) = mask_coords(l, r);
+                if masks[idx] & 1 << bit == 0 {
+                    update.swap(l_idx, r_idx);
+                    valid = false;
+                }
+            }
+        }
     }
 }
 
