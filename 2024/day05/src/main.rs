@@ -73,17 +73,14 @@ fn main() {
     }
 
     let mut i = 0;
-    let mut curr_update: Vec<u8> = vec![];
-
-    let mut updates = vec![];
+    let mut update: Vec<u8> = vec![];
+    let mut p1_total: u32 = 0;
+    let mut p2_total: u32 = 0;
 
     loop {
-        if i + 1 > input_p2.len() {
-            break;
-        }
         let l = to_page_num(input_p2, i);
         i += 2;
-        curr_update.push(l);
+        update.push(l);
 
         if i >= input_p2.len() {
             break;
@@ -95,27 +92,25 @@ fn main() {
                 // pass
             }
             b'\n' => {
-                updates.push(curr_update.clone());
-                curr_update.clear();
+                match is_valid(&mut update, &masks) {
+                    Valid::Yes => {
+                        p1_total += mid(&mut update) as u32;
+                    }
+                    Valid::No(_, _) => {
+                        rearrange_until_valid(&mut update, &masks);
+                        p2_total += mid(&mut update) as u32;
+                    }
+                }
+
+                update.clear();
             }
             c => {
                 println!("Invalid input {}", c);
                 break;
             }
         }
-    }
-
-    let mut p1_total: u32 = 0;
-    let mut p2_total: u32 = 0;
-    for mut update in updates {
-        match is_valid(&mut update, &masks) {
-            Valid::Yes => {
-                p1_total += mid(&mut update) as u32;
-            }
-            Valid::No(_, _) => {
-                rearrange_until_valid(&mut update, &masks);
-                p2_total += mid(&mut update) as u32;
-            }
+        if i + 1 > input_p2.len() {
+            break;
         }
     }
 
