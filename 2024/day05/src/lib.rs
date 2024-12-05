@@ -14,38 +14,25 @@ fn to_page_num(input: &[u8], i: usize) -> u8 {
     (input[i] - 48) * 10 + (input[i + 1] - 48)
 }
 
-#[derive(PartialEq)]
-enum Valid {
-    Yes,
-    // these are indices in an update that are invalid
-    No(usize, usize),
-}
 
 // check if update is valid
 #[inline]
-fn is_valid(update: &mut [u8], masks: &[u8]) -> Valid {
+fn is_valid(update: &mut [u8], masks: &[u8]) -> bool {
     for l_idx in 0..update.len() - 1 {
-        for r_idx in l_idx + 1..update.len() {
-            let l = update[l_idx];
-            let r = update[r_idx];
+        let l = update[l_idx];
+        let r = update[l_idx + 1];
 
-            let (idx, bit) = mask_coords(l, r);
-            if masks[idx] & 1 << bit == 0 {
-                return Valid::No(l_idx, r_idx);
-            }
+        let (idx, bit) = mask_coords(l, r);
+        if masks[idx] & 1 << bit == 0 {
+            return false
         }
     }
 
-    Valid::Yes
+    true
 }
 
 #[inline]
 fn rearrange_until_valid(update: &mut [u8], masks: &[u8]) {
-    // this code is simpler, but is about 90% slower
-    // while let Valid::No(l_idx, r_idx) = is_valid(update, masks) {
-    //     update.swap(l_idx, r_idx);
-    // }
-
     let mut valid = false;
     while !valid {
         valid = true;
@@ -102,7 +89,7 @@ pub fn doit() -> (u32, u32) {
         let c = input_p2[i];
         i += 1;
         if c == b'\n' {
-            if is_valid(&mut update, &masks) == Valid::Yes {
+            if is_valid(&mut update, &masks) {
                 p1_total += mid(&mut update) as u32;
             } else {
                 rearrange_until_valid(&mut update, &masks);
