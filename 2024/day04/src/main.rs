@@ -5,7 +5,9 @@ use arrow_array::{
     RecordBatch,
 };
 use arrow_schema::{DataType, Field, Schema};
-use datafusion::{arrow::util::pretty::print_batches, common::utils::transpose, prelude::SessionContext};
+use datafusion::{
+    arrow::util::pretty::print_batches, common::utils::transpose, prelude::SessionContext,
+};
 
 #[tokio::main]
 async fn main() {
@@ -41,7 +43,6 @@ async fn main() {
         RecordBatch::try_new(schema.clone(), vec![Arc::new(list_builder.finish())]).unwrap();
     ctx.register_batch("grid_rev", batch).unwrap();
 
-
     let grid = transpose(grid.clone());
     grid.iter()
         .for_each(|row| list_builder.append_value(row.iter().map(Some).collect::<Vec<_>>()));
@@ -50,7 +51,10 @@ async fn main() {
     ctx.register_batch("grid_t", batch).unwrap();
 
     let tmp_view_def = "select unnest(s) as s, row_number() OVER (PARTITION BY 'a') - 1 as y";
-    let coords_view_def = format!("select distinct s, y, (row_number() OVER (PARTITION BY 'a') - 1) % {} as x", dims);
+    let coords_view_def = format!(
+        "select distinct s, y, (row_number() OVER (PARTITION BY 'a') - 1) % {} as x",
+        dims
+    );
     let view_defs = vec![
         format!("create view rows_tmp as {} from grid", tmp_view_def),
         format!("create view rows_tmp_rev as {} from grid_rev", tmp_view_def),
@@ -81,11 +85,14 @@ async fn main() {
         ctx.sql(&def).await.unwrap().collect().await.unwrap();
     }
     println!("part 1 not working");
-    let result = ctx.sql(
-        "select sum(c) as part1 from matches",
-    ).await.unwrap().collect().await.unwrap();
+    let result = ctx
+        .sql("select sum(c) as part1 from matches")
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
     print_batches(&result).unwrap();
-
 
     // part 2
     let offset_cords = vec![
