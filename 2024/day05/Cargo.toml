@@ -4,11 +4,7 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-arrow.workspace = true
-arrow-array.workspace = true
-arrow-schema.workspace = true
-datafusion.workspace = true
-tokio.workspace = true
+
 
 [dev-dependencies]
 criterion.workspace = true
