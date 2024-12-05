@@ -9,3 +9,10 @@ arrow-array.workspace = true
 arrow-schema.workspace = true
 datafusion.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "bench"
+harness = false
