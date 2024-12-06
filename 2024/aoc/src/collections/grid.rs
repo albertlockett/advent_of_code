@@ -1,4 +1,3 @@
-
 pub struct Grid<T> {
     data: Vec<Vec<T>>,
     width: usize,
@@ -21,11 +20,11 @@ impl<T> Grid<T> {
     pub fn from(data: Vec<Vec<T>>) -> Self {
         // TODO empty checks
         let height = data.len();
-        let width = data.get(0).map(|row| row.len()).unwrap_or(0);
+        let width = data.first().map(|row| row.len()).unwrap_or(0);
         Self {
             width,
             height,
-            data
+            data,
         }
     }
 
@@ -53,8 +52,10 @@ impl<T> Grid<T> {
         self.height
     }
 
-    pub fn print(&self) where
-    T: std::fmt::Display + Clone {
+    pub fn print(&self)
+    where
+        T: std::fmt::Display + Clone,
+    {
         for row in &self.data {
             let g = row.iter().map(|e| format!("{}", e));
             let g2 = g.collect::<Vec<String>>();
