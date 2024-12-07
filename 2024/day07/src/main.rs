@@ -4,26 +4,35 @@
 enum Operation {
     Add,
     Mult,
+    Concat,
 }
 
 struct OpSeqIter {
     len: usize,
     curr: u16,
+    concat_curr: u16,
 }
 
 impl OpSeqIter {
     fn new(len: usize) -> Self {
-        Self { len, curr: 0 }
+        Self { len, curr: 0, concat_curr: 0 }
     }
 }
 
+// TODO this emits a an extra full concat sequence too many times
 impl Iterator for OpSeqIter {
     type Item = Vec<Operation>;
 
     fn next(&mut self) -> Option<Vec<Operation>> {
+        if self.concat_curr >= (1 << self.len) {
+            self.concat_curr = 0;
+            self.curr += 1;
+        }
+
         if self.curr >= (1 << self.len) {
             return None
         }
+
         let mut seq = vec![];
         for i in 0..self.len {
             if self.curr & (1 << i) == 0 {
@@ -32,7 +41,14 @@ impl Iterator for OpSeqIter {
                 seq.push(Operation::Mult);
             }
         }
-        self.curr += 1;
+
+        for i in 0..self.len {
+            if self.concat_curr & (1 << i) > 0 {
+                seq[i] = Operation::Concat;
+            }
+        }
+
+        self.concat_curr += 1;
 
         Some(seq)
     }
@@ -52,7 +68,6 @@ fn main() {
     let mut curr_num = 0;
 
     for b in input {
-        // print!("{}", b);
         match b {
             b'\n' => {
                 curr_line.seq.push(curr_num);
@@ -69,16 +84,25 @@ fn main() {
                 curr_num = 0;
             }
             x => {
-                // println!("\n{}", curr_num);
                 curr_num *= 10;
                 curr_num += *x as u64 - 48;
             }
         }
     }
 
+
+    for i in OpSeqIter::new(3) {
+        println!("{:?}", i)
+    }
+
     
     let mut p1 = 0;
+    let mut lins_processed = 0;
+    let total_lines = lines.len();
     for line in lines {
+        lins_processed += 1;
+        println!("processing line {}/{}", lins_processed, total_lines);
+
         let op_iter = OpSeqIter::new(line.seq.len() - 1);
         for op_seq in op_iter {
             let mut curr = line.seq[0];
@@ -93,15 +117,14 @@ fn main() {
                     Operation::Mult => {
                         curr = x * curr;
                     }
-                }
-
-                if curr > line.test {
-                    break
+                    Operation::Concat => {
+                        curr = concat(curr, x);
+                    }
                 }
             }
 
             if curr == line.test {
-                println!("found matching line {:?}", line);
+                // println!("found matching line {:?}", line);
                 p1 += line.test;
                 break;
             }
@@ -110,3 +133,17 @@ fn main() {
 
     println!("{}", p1)
 }
+
+fn concat(mut x: u64, mut y: u64) -> u64 {
+    let x_s = format!("{x}{y}");
+    return x_s.parse().unwrap();
+    // while y > 0 {
+    //     x *= 10;
+    //     x += y % 10;
+    //     y /= 10
+    // }
+
+    // x
+}
+
+// 89168268445976 too low
