@@ -131,19 +131,17 @@ fn main() {
         }
     }
 
-    println!("{}", p1)
+    println!("{}", p1);
+    println!("333027885676693");
 }
 
 fn concat(mut x: u64, mut y: u64) -> u64 {
-    let x_s = format!("{x}{y}");
-    return x_s.parse().unwrap();
-    // while y > 0 {
-    //     x *= 10;
-    //     x += y % 10;
-    //     y /= 10
-    // }
+    let y_orig = y;
+    while y > 0 {
+        x *= 10;
+        y /= 10
+    }
+    x += y_orig;
 
-    // x
+    x
 }
-
-// 89168268445976 too low
