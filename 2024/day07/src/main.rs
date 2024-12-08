@@ -1,5 +1,3 @@
-
-
 #[derive(Debug)]
 enum Operation {
     Add,
@@ -15,7 +13,11 @@ struct OpSeqIter {
 
 impl OpSeqIter {
     fn new(len: usize) -> Self {
-        Self { len, curr: 0, concat_curr: 0 }
+        Self {
+            len,
+            curr: 0,
+            concat_curr: 0,
+        }
     }
 }
 
@@ -30,7 +32,7 @@ impl Iterator for OpSeqIter {
         }
 
         if self.curr >= (1 << self.len) {
-            return None
+            return None;
         }
 
         let mut seq = vec![];
@@ -57,7 +59,7 @@ impl Iterator for OpSeqIter {
 #[derive(Default, Debug)]
 struct Line {
     test: u64,
-    seq: Vec<u64>
+    seq: Vec<u64>,
 }
 
 fn main() {
@@ -74,7 +76,7 @@ fn main() {
                 curr_num = 0;
                 lines.push(curr_line);
                 curr_line = Line::default();
-            },
+            }
             b':' => {
                 curr_line.test = curr_num;
                 curr_num = 0;
@@ -90,12 +92,10 @@ fn main() {
         }
     }
 
-
     for i in OpSeqIter::new(3) {
         println!("{:?}", i)
     }
 
-    
     let mut p1 = 0;
     let mut lins_processed = 0;
     let total_lines = lines.len();
