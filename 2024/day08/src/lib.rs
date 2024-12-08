@@ -39,23 +39,19 @@ pub fn doit() -> (usize, usize) {
     max_x -= 1;
     let max_y = y - 1;
 
-    let mut antinodes_p1 = vec![];
-    // let mut antinodes_p2 = HashSet::new();
-    let mut antinodes_p2 = vec![];
+    let mut antinodes_p1 = Vec::with_capacity(2000);
+    let mut antinodes_p2 = Vec::with_capacity(2000);
     coord.iter().for_each(|coords| {
         let mut tmp = find_antinodes(coords, max_x, max_y);
         antinodes_p1.append(&mut tmp);
-        // tmp.into_iter().for_each(|coord| {
-        //     antinodes_p1.insert(coord);
-        // });
         let mut tmp = find_antinode_p2(coords, max_x, max_y);
         antinodes_p2.append(&mut tmp);
-        // tmp.into_iter().for_each(|coord| {
-        //     antinodes_p2.insert(coord);
-        // });
     });
 
-    (antinodes_p1.iter().unique().count(), antinodes_p2.iter().unique().count())
+    (
+        antinodes_p1.iter().unique().count(),
+        antinodes_p2.iter().unique().count()
+    )
 }
 
 #[inline]
@@ -98,10 +94,6 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
         let a = coords[i];
         for j in (i + 1)..coords.len() {
             let b = coords[j];
-            // if a.0 == b.0 && a.1 == b.1 {
-            //     continue
-            // }
-            // let antinode = find_antinode(a, b);
             let dx = a.0 - b.0;
             let dy = a.1 - b.1;
             let mut z = (a.0 + dx, a.1 + dy);
@@ -113,8 +105,6 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
                 this_pair_antinodes += 1;
             }
 
-            // z.0 -= dx;
-            // z.1 -= dy;
             let mut z = (a.0 - dx, a.1 - dy);
             while is_valid_coord(&z, max_x, max_y) {
                 antinodes.push(z);
@@ -125,7 +115,6 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
 
             if this_pair_antinodes >= 1 {
                 antinodes.push(a);
-                // antinodes.push(b);
             }
         }
     }
