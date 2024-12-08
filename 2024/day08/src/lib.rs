@@ -97,12 +97,17 @@ fn find_antinode(a: &Coord, b: &Coord) -> Coord {
 #[inline]
 fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
     let mut antinodes = vec![];
+    if coords.len() == 0 {
+        return antinodes
+    }
 
-    coords.iter().for_each(|a| {
-        coords.iter().for_each(|b| {
-            if a.0 == b.0 && a.1 == b.1 {
-                return;
-            }
+    for i in 0..coords.len() - 1 {
+        let a = coords[i];
+        for j in (i + 1)..coords.len() {
+            let b = coords[j];
+            // if a.0 == b.0 && a.1 == b.1 {
+            //     continue
+            // }
             // let antinode = find_antinode(a, b);
             let dx = a.0 - b.0;
             let dy = a.1 - b.1;
@@ -126,11 +131,11 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
             }
 
             if this_pair_antinodes >= 1 {
-                antinodes.push(*a);
-                antinodes.push(*b);
+                antinodes.push(a);
+                antinodes.push(b);
             }
-        });
-    });
+        }
+    }
 
     antinodes
 }
