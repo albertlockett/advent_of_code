@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 
 type Coord = (i32, i32);
@@ -50,7 +48,7 @@ pub fn doit() -> (usize, usize) {
 
     (
         antinodes_p1.iter().unique().count(),
-        antinodes_p2.iter().unique().count()
+        antinodes_p2.iter().unique().count(),
     )
 }
 
@@ -77,23 +75,21 @@ fn find_antinodes(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
 fn find_antinode(a: &Coord, b: &Coord) -> Coord {
     let x = a.0 - b.0;
     let y = a.1 - b.1;
-    let z = (x + a.0, y + a.1);
 
-
-    z
+    (x + a.0, y + a.1)
 }
 
 #[inline]
 fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
     let mut antinodes = vec![];
-    if coords.len() == 0 {
-        return antinodes
+    if coords.is_empty() {
+        return antinodes;
     }
 
     for i in 0..coords.len() - 1 {
         let a = coords[i];
-        for j in (i + 1)..coords.len() {
-            let b = coords[j];
+        for b in coords.iter().skip(i + 1) {
+            // let b = coords[j];
             let dx = a.0 - b.0;
             let dy = a.1 - b.1;
             let mut z = (a.0 + dx, a.1 + dy);

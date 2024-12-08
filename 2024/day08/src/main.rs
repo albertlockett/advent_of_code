@@ -1,5 +1,3 @@
-
-
 fn main() {
     let (p1, p2) = day08::doit();
 
