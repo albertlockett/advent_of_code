@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
+
 type Coord = (i32, i32);
 
 pub fn doit() -> (usize, usize) {
@@ -37,32 +39,23 @@ pub fn doit() -> (usize, usize) {
     max_x -= 1;
     let max_y = y - 1;
 
-    // for debugging
-    let mut chars = vec![];
-    for i in 'A'..'[' {
-        chars.push(i);
-    }
-    for i in 'a'..'{' {
-        chars.push(i);
-    }
-    for i in '0'..':' {
-        chars.push(i);
-    }
-
-    let mut antinodes_p1 = HashSet::new();
-    let mut antinodes_p2 = HashSet::new();
+    let mut antinodes_p1 = vec![];
+    // let mut antinodes_p2 = HashSet::new();
+    let mut antinodes_p2 = vec![];
     coord.iter().for_each(|coords| {
-        let tmp = find_antinodes(coords, max_x, max_y);
-        tmp.into_iter().for_each(|coord| {
-            antinodes_p1.insert(coord);
-        });
-        let tmp = find_antinode_p2(coords, max_x, max_y);
-        tmp.into_iter().for_each(|coord| {
-            antinodes_p2.insert(coord);
-        });
+        let mut tmp = find_antinodes(coords, max_x, max_y);
+        antinodes_p1.append(&mut tmp);
+        // tmp.into_iter().for_each(|coord| {
+        //     antinodes_p1.insert(coord);
+        // });
+        let mut tmp = find_antinode_p2(coords, max_x, max_y);
+        antinodes_p2.append(&mut tmp);
+        // tmp.into_iter().for_each(|coord| {
+        //     antinodes_p2.insert(coord);
+        // });
     });
 
-    (antinodes_p1.len(), antinodes_p2.len())
+    (antinodes_p1.iter().unique().count(), antinodes_p2.iter().unique().count())
 }
 
 #[inline]
@@ -132,7 +125,7 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
 
             if this_pair_antinodes >= 1 {
                 antinodes.push(a);
-                antinodes.push(b);
+                // antinodes.push(b);
             }
         }
     }
