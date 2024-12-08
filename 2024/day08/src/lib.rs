@@ -65,6 +65,7 @@ pub fn doit() -> (usize, usize) {
     (antinodes_p1.len(), antinodes_p2.len())
 }
 
+#[inline]
 fn find_antinodes(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
     let mut antinodes = vec![];
 
@@ -83,21 +84,17 @@ fn find_antinodes(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
     antinodes
 }
 
+#[inline]
 fn find_antinode(a: &Coord, b: &Coord) -> Coord {
     let x = a.0 - b.0;
     let y = a.1 - b.1;
     let z = (x + a.0, y + a.1);
 
-    let da = (((z.0 - a.0).pow(2) + (z.1 - a.1).pow(2)) as f64).sqrt();
-    let db = (((z.0 - b.0).pow(2) + (z.1 - b.1).pow(2)) as f64).sqrt();
-
-    if (db / da) != 2.0 {
-        panic!("bad calc");
-    }
 
     z
 }
 
+#[inline]
 fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
     let mut antinodes = vec![];
 
@@ -109,7 +106,7 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
             // let antinode = find_antinode(a, b);
             let dx = a.0 - b.0;
             let dy = a.1 - b.1;
-            let mut z = (dx + a.0, dy + a.1);
+            let mut z = (a.0 + dx, a.1 + dy);
             let mut this_pair_antinodes = 0;
             while is_valid_coord(&z, max_x, max_y) {
                 antinodes.push(z);
@@ -118,8 +115,9 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
                 this_pair_antinodes += 1;
             }
 
-            z.0 -= dx;
-            z.1 -= dy;
+            // z.0 -= dx;
+            // z.1 -= dy;
+            let mut z = (a.0 - dx, a.1 - dy);
             while is_valid_coord(&z, max_x, max_y) {
                 antinodes.push(z);
                 z.0 -= dx;
@@ -127,7 +125,7 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
                 this_pair_antinodes += 1;
             }
 
-            if this_pair_antinodes > 1 {
+            if this_pair_antinodes >= 1 {
                 antinodes.push(*a);
                 antinodes.push(*b);
             }
@@ -137,6 +135,7 @@ fn find_antinode_p2(coords: &[Coord], max_x: i32, max_y: i32) -> Vec<Coord> {
     antinodes
 }
 
+#[inline]
 fn is_valid_coord(coord: &Coord, max_x: i32, max_y: i32) -> bool {
     !(coord.0 < 0 || coord.1 < 0 || coord.0 > max_x || coord.1 > max_y)
 }
