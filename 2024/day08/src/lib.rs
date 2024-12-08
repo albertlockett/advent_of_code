@@ -4,13 +4,11 @@ type Coord = (i32, i32);
 
 pub fn doit() -> (usize, usize) {
     let input = include_bytes!("../../inputs/day08/real.txt");
-    // let empty =
     let mut coord = vec![Vec::<Coord>::new(); 26 + 26 + 10];
 
     let mut x = 0;
     let mut y = 0;
     let mut max_x = 0;
-    // let mut max_y = 0;
     input.iter().copied().for_each(|b| match b {
         b'A'..b'[' => {
             coord[(b - b'A') as usize].push((x, y));
