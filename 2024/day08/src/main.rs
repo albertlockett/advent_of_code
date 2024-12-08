@@ -3,7 +3,7 @@ use std::collections::HashSet;
 type Coord = (i32, i32);
 
 fn main() {
-    let input = include_bytes!("../../inputs/day08/real.txt");
+    let input = include_bytes!("../../inputs/day08/test4.txt");
     // let empty = 
     let mut coord = vec![Vec::<Coord>::new(); 26 + 26 + 10];
 
@@ -63,7 +63,8 @@ fn main() {
             println!("{:?}", coords);
             println!("HERES THE BADD EGG");
         }
-        let tmp = find_antinodes(coords, max_x, max_y);
+        // let tmp = find_antinodes(coords, max_x, max_y);
+        let tmp = find_antinode_p2(coords, max_x, max_y);
         println!("{}", tmp.len());
         // if tmp.len() != 2 {
         //     panic!("bad number");
@@ -84,6 +85,9 @@ fn main() {
     // 325 = too high
     // 339 = too high
     println!("p1 = {}", antinodes.len());
+
+    // 809 = too low
+    println!("p2 = {}", antinodes.len());
 }
 
 fn find_antinodes(coords: &Vec<Coord>, max_x: i32, max_y: i32) -> Vec<Coord> {
@@ -104,6 +108,7 @@ fn find_antinodes(coords: &Vec<Coord>, max_x: i32, max_y: i32) -> Vec<Coord> {
     antinodes
 }
 
+
 fn find_antinode(a: &Coord, b: &Coord) -> Coord {
     let x = a.0 - b.0;
     let y = a.1 - b.1;
@@ -118,6 +123,46 @@ fn find_antinode(a: &Coord, b: &Coord) -> Coord {
 
     return z
 }
+
+fn find_antinode_p2(coords: &Vec<Coord>, max_x: i32, max_y: i32) -> Vec<Coord> {
+    let mut antinodes = vec![];
+
+    coords.iter().for_each(|a| {
+        coords.iter().for_each(|b| {
+            if a.0 == b.0 && a.1 == b.1 {
+                return
+            }
+            // let antinode = find_antinode(a, b);
+            let dx = a.0 - b.0;
+            let dy = a.1 - b.1;
+            let mut z = (dx + a.0, dy + a.1);
+            let mut this_pair_antinodes = 0;
+            while is_valid_coord(&z, max_x, max_y) {
+                antinodes.push(z);
+                z.0 += dx;
+                z.1 += dy;
+                this_pair_antinodes += 1;
+            }
+
+            z.0 -= dx;
+            z.1 -= dy;
+            while is_valid_coord(&z, max_x, max_y) {
+                antinodes.push(z);
+                z.0 -= dx;
+                z.1 -= dy;
+                this_pair_antinodes += 1;
+            }
+
+            if this_pair_antinodes > 1 {
+                antinodes.push(*a);
+                antinodes.push(*b);
+            }
+        });
+    });
+
+    antinodes
+}
+
 
 fn is_valid_coord(coord: &Coord, max_x: i32, max_y: i32) -> bool {
     if coord.0 < 0 || coord.1 < 0 || coord.0 > max_x || coord.1 > max_y {
