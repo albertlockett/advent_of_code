@@ -12,45 +12,57 @@ fn main() {
         width,
         height,
         // TODO should this be done with chunks or something
-        vals: input
-            .iter()
-            .filter(|b| **b != b'\n')
-            .copied()
-            .collect(),
+        vals: input.iter().filter(|b| **b != b'\n').copied().collect(),
     };
 
     let mut p1_total = 0;
-    for x in 0..width as i16 {
-        for y in 0..height as i16 {
-            let val = grid.get(x, y).unwrap();
-            if val == b'0' {
-                let mut heads = vec![(x, y)];
-                let mut curr_z = b'0';
-                while curr_z < b'9' {
-                    let mut next_heads = Vec::new();
+    let mut p2_total = 0;
+    for is_p1 in vec![true, false].into_iter() {
+        for x in 0..width as i16 {
+            for y in 0..height as i16 {
+                let val = grid.get(x, y).unwrap();
+                if val == b'0' {
+                    let mut heads = vec![(x, y)];
+                    let mut curr_z = b'0';
+                    while curr_z < b'9' {
+                        let mut next_heads = Vec::new();
 
-                    for (x, y) in heads {
-                        for (x, y) in
-                            vec![(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)].into_iter()
-                        {
-                            if let Some(z) = grid.get(x, y) {
-                                if z == curr_z + 1 {
-                                    next_heads.push((x, y));
+                        for (x, y) in heads {
+                            for (x, y) in
+                                vec![(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)].into_iter()
+                            {
+                                if let Some(z) = grid.get(x, y) {
+                                    if z == curr_z + 1 {
+                                        next_heads.push((x, y));
+                                    }
                                 }
                             }
                         }
+
+                        curr_z += 1;
+
+                        if is_p1 {
+                            heads = next_heads.into_iter().unique().collect();
+                        } else {
+                            heads = next_heads.into_iter().collect();
+                        }
                     }
 
-                    curr_z += 1;
-                    heads = next_heads.into_iter().unique().collect();
+                    if is_p1 {
+                        p1_total += heads.len()
+                    } else {
+                        p2_total += heads.len()
+                    }
                 }
-
-                p1_total += heads.len()
             }
         }
     }
 
     println!("p1 = {}", p1_total);
+    println!("p2 = {}", p2_total);
+
+    assert_eq!(p1_total, 557);
+    assert_eq!(p2_total, 1062);
 }
 
 struct Grid {
