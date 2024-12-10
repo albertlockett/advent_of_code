@@ -5,3 +5,10 @@ edition.workspace = true
 
 [dependencies]
 itertools.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "bench"
+harness = false
