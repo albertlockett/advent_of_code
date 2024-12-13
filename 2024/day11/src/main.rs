@@ -16,29 +16,29 @@ fn main() {
     println!("p1 = {}", p1_total);
 }
 
-fn count_rocks(mut blinks: u8, rock_num: u64, cache:  &mut BTreeMap::<(u8, u64), u64>) -> u64 {
+fn count_rocks(mut blinks: u8, rock_num: u64, cache: &mut BTreeMap<(u8, u64), u64>) -> u64 {
     if let Some(result) = cache.get(&(blinks, rock_num)) {
-        return *result
+        return *result;
     }
     if blinks == 0 {
-        return 1
+        return 1;
     }
 
     blinks -= 1;
     let num_rocks = match rock_num {
-      0 => count_rocks(blinks, 1, cache),
-     
-      r => {
-        let digits = digits(r);
-        if digits % 2 == 0 {
-            let (l, r) = split(r, digits);
-            let l = count_rocks(blinks, l, cache);
-            let r = count_rocks(blinks, r, cache);
-            l + r
-        } else {
-            count_rocks(blinks, rock_num * 2024, cache)
-        }        
-      }
+        0 => count_rocks(blinks, 1, cache),
+
+        r => {
+            let digits = digits(r);
+            if digits % 2 == 0 {
+                let (l, r) = split(r, digits);
+                let l = count_rocks(blinks, l, cache);
+                let r = count_rocks(blinks, r, cache);
+                l + r
+            } else {
+                count_rocks(blinks, rock_num * 2024, cache)
+            }
+        }
     };
 
     cache.insert((blinks + 1, rock_num), num_rocks);
@@ -58,16 +58,14 @@ fn digits(mut r: u64) -> u64 {
 
 fn split(r: u64, digits: u64) -> (u64, u64) {
     let s = 10u64.pow(digits as u32 / 2);
-    return (r / s, r % s)
+    return (r / s, r % s);
 }
-
-
 
 // TODO NOT USED -- try with caching the full path it's probably faster
 // this implmentation isn't done
 #[derive(Default)]
 struct Cache {
-    cache: BTreeMap<u64, Vec<u64>>
+    cache: BTreeMap<u64, Vec<u64>>,
 }
 
 impl Cache {
@@ -94,9 +92,7 @@ impl Cache {
                     Some(*curr.get(curr.len() - from_end - 1).clone().unwrap())
                 }
             }
-            None => {
-                None
-            }
+            None => None,
         }
     }
 }
