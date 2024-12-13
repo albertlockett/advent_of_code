@@ -1,4 +1,3 @@
-
 fn main() {
     let input = include_str!("../../inputs/day13/real.txt");
 
@@ -20,10 +19,10 @@ fn main() {
         let xc = parse_prize_num(prize.get(1).unwrap());
         let yc = parse_prize_num(prize.get(2).unwrap());
 
-        // part 1 = 
+        // part 1 =
         let b = (-1.0 * xa * yc / (xb * ya) + xc / xb) / (1.0 - xa * yb / (xb * ya));
         let a = (-1.0 * b * yb + yc) / ya;
-        
+
         if is_basically_integer(b) && is_basically_integer(a) {
             p1_tokens += 3.0 * a + 1.0 * b;
         }
@@ -35,7 +34,6 @@ fn main() {
             let factor = factor as f64;
             let yc = (yc + 10000000000000.0) / factor;
             let xc = (xc + 10000000000000.0) / factor;
-
 
             let b = factor * (-1.0 * xa * yc / (xb * ya) + xc / xb) / (1.0 - xa * yb / (xb * ya));
             let a = factor * (-1.0 * b * yb + yc) / ya;
@@ -59,24 +57,33 @@ fn is_basically_integer(f: f64) -> bool {
     let m = f % 1.0;
     let threshold = 0.001;
     if m < threshold {
-        return true
+        return true;
     }
 
     if 1.0 - m < threshold {
-        return true
+        return true;
     }
 
-    return false
+    return false;
 }
 
 fn parse_button_num(s: &str) -> f64 {
-    s.split("+").last().unwrap().trim_end_matches(",").parse().unwrap()
+    s.split("+")
+        .last()
+        .unwrap()
+        .trim_end_matches(",")
+        .parse()
+        .unwrap()
 }
 
 fn parse_prize_num(s: &str) -> f64 {
-    s.split("=").last().unwrap().trim_end_matches(",").parse().unwrap()
+    s.split("=")
+        .last()
+        .unwrap()
+        .trim_end_matches(",")
+        .parse()
+        .unwrap()
 }
-
 
 fn gcfs(x: u64, y: u64) -> Vec<u64> {
     let mut result = vec![1];
