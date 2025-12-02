@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, Result};
 
 pub mod d01;
+pub mod d02;
 
 pub trait Challenge: Default {
     fn do_p1(&mut self, input: &str) -> Result<usize>;

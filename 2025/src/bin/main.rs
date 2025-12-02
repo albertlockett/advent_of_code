@@ -1,10 +1,13 @@
 use aoc2025::d01::Day01;
+use aoc2025::d02::Day02;
 use aoc2025::{ChallengeAnswer, run};
 
 fn main() {
     let result = run::<Day01>("inputs/d01.txt").unwrap();
-    println!("{result}");
-    assert_eq!(result, ChallengeAnswer::new(1066, 6223))
+    println!("day1 = {result}");
+    assert_eq!(result, ChallengeAnswer::new(1066, 6223));
 
-    // 7026 too high
+    let result = run::<Day02>("inputs/d02.txt").unwrap();
+    println!("day1 = {result}");
+    assert_eq!(result, ChallengeAnswer::new(29818212493, 0))
 }
