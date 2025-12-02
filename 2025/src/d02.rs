@@ -25,7 +25,7 @@ fn to_range(bytes: &[u8]) -> (usize, usize) {
     (start, end)
 }
 
-fn is_valid(input: usize) -> bool {
+fn is_valid_p1(input: usize) -> bool {
     let num = format!("{input}");
 
     let len = num.len();
@@ -40,6 +40,38 @@ fn is_valid(input: usize) -> bool {
     first_half != next_half
 }
 
+fn is_valid_p2(input: usize) -> bool {
+    let num = format!("{input}");
+    let num_len = num.len();
+
+    for range_len in 1..=num_len / 2 {
+        // need to be able to divide candidate into input evenly times
+        if num_len % range_len != 0 {
+            continue;
+        }
+
+        let candidate = &num[0..range_len];
+
+        let mut valid_for_range_len = false;
+        for repeat in 1..num_len / range_len {
+            let start = repeat * range_len;
+            let end = (repeat + 1) * range_len;
+            let maybe_repeat = &num[start..end];
+
+            if candidate != maybe_repeat {
+                valid_for_range_len = true;
+                break;
+            }
+        }
+
+        if !valid_for_range_len {
+            return false;
+        }
+    }
+
+    true
+}
+
 impl Challenge for Day02 {
     fn do_p1(&mut self, input: &str) -> Result<usize> {
         let ranges = Self::read_input_iter(input)?
@@ -50,7 +82,7 @@ impl Challenge for Day02 {
         for range in ranges {
             let (start, end) = range?;
             for i in start..end {
-                if !is_valid(i) {
+                if !is_valid_p1(i) {
                     sum_invalid += i;
                 }
             }
@@ -59,7 +91,32 @@ impl Challenge for Day02 {
         Ok(sum_invalid)
     }
 
-    fn do_p2(&mut self, _input: &str) -> Result<usize> {
-        Ok(0)
+    fn do_p2(&mut self, input: &str) -> Result<usize> {
+        let ranges = Self::read_input_iter(input)?
+            .split(b',')
+            .map(|range| range.map(|r| to_range(&r)));
+
+        let mut sum_invalid = 0;
+        for range in ranges {
+            let (start, end) = range?;
+            for i in start..=end {
+                if !is_valid_p2(i) {
+                    sum_invalid += i;
+                }
+            }
+        }
+
+        Ok(sum_invalid)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_valid_p2() {
+        assert!(is_valid_p2(54));
+        assert!(!is_valid_p2(55));
     }
 }
