@@ -63,22 +63,31 @@ fn is_valid_p1(input: usize) -> bool {
 }
 
 fn is_valid_p2(input: usize) -> bool {
-    let num = format!("{input}");
-    let num_len = num.len();
+    let num_len = 1 + (input as f64).log(10.0) as usize;
 
+    let mut pow_10_range = 1;
     for range_len in 1..=num_len / 2 {
+        pow_10_range *= 10;
+
         // need to be able to divide candidate into input evenly times
         if num_len % range_len != 0 {
             continue;
         }
 
-        let candidate = &num[0..range_len];
+        let candidate = input % pow_10_range;
+        if candidate == 0 {
+            // this just screws things up
+            continue;
+        }
 
+        let mut tmp = input;
         let mut valid_for_range_len = false;
-        for repeat in 1..num_len / range_len {
-            let start = repeat * range_len;
-            let end = (repeat + 1) * range_len;
-            let maybe_repeat = &num[start..end];
+        for _ in 1..num_len / range_len {
+            for _ in 0..range_len {
+                tmp /= 10;
+            }
+
+            let maybe_repeat = tmp % pow_10_range;
 
             if candidate != maybe_repeat {
                 valid_for_range_len = true;
@@ -110,6 +119,7 @@ mod test {
 
     #[test]
     fn test_valid_p2() {
+        assert!(is_valid_p2(1000));
         assert!(is_valid_p2(54));
         assert!(!is_valid_p2(55));
     }
