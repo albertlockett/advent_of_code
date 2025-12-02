@@ -49,18 +49,17 @@ fn to_range(bytes: &[u8]) -> (usize, usize) {
 }
 
 fn is_valid_p1(input: usize) -> bool {
-    let num = format!("{input}");
-
-    let len = num.len();
-
-    if len % 2 == 1 {
+    let len = (input as f64).log(10.0) as usize;
+    if len % 2 == 0 {
         return true;
     }
 
-    let first_half = &num[0..len / 2];
-    let next_half = &num[len / 2..len];
+    let pow_10 = 10usize.pow((len / 2 + 1) as u32);
 
-    first_half != next_half
+    let top_half = input / pow_10;
+    let bottom_half = input % pow_10;
+
+    top_half != bottom_half
 }
 
 fn is_valid_p2(input: usize) -> bool {
