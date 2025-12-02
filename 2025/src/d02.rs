@@ -5,6 +5,29 @@ use crate::Challenge;
 #[derive(Default)]
 pub struct Day02 {}
 
+impl Day02 {
+    fn run_with_validity<F>(input: &str, is_valid: F) -> Result<usize>
+    where
+        F: Fn(usize) -> bool,
+    {
+        let ranges = Self::read_input_iter(input)?
+            .split(b',')
+            .map(|range| range.map(|r| to_range(&r)));
+
+        let mut sum_invalid = 0;
+        for range in ranges {
+            let (start, end) = range?;
+            for i in start..end {
+                if !is_valid(i) {
+                    sum_invalid += i;
+                }
+            }
+        }
+
+        Ok(sum_invalid)
+    }
+}
+
 fn to_range(bytes: &[u8]) -> (usize, usize) {
     let mut start = 0usize;
     let mut end = 0usize;
@@ -74,39 +97,11 @@ fn is_valid_p2(input: usize) -> bool {
 
 impl Challenge for Day02 {
     fn do_p1(&mut self, input: &str) -> Result<usize> {
-        let ranges = Self::read_input_iter(input)?
-            .split(b',')
-            .map(|range| range.map(|r| to_range(&r)));
-
-        let mut sum_invalid = 0;
-        for range in ranges {
-            let (start, end) = range?;
-            for i in start..end {
-                if !is_valid_p1(i) {
-                    sum_invalid += i;
-                }
-            }
-        }
-
-        Ok(sum_invalid)
+        Self::run_with_validity(input, is_valid_p1)
     }
 
     fn do_p2(&mut self, input: &str) -> Result<usize> {
-        let ranges = Self::read_input_iter(input)?
-            .split(b',')
-            .map(|range| range.map(|r| to_range(&r)));
-
-        let mut sum_invalid = 0;
-        for range in ranges {
-            let (start, end) = range?;
-            for i in start..=end {
-                if !is_valid_p2(i) {
-                    sum_invalid += i;
-                }
-            }
-        }
-
-        Ok(sum_invalid)
+        Self::run_with_validity(input, is_valid_p2)
     }
 }
 
