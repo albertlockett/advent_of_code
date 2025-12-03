@@ -18,6 +18,20 @@ fn find_max_and_pos(nums: &[u8]) -> (usize, usize) {
     (pos, (max - b'0') as usize)
 }
 
+fn do_it(nums: &[u8], digs: usize) -> usize {
+    let mut next_pos = 0;
+    let mut total = 0;
+    for i in 0..digs {
+        let end = digs - (i + 1);
+        let (pos, num) = find_max_and_pos(&nums[next_pos..nums.len() - end]);
+        next_pos += pos + 1;
+        total *= 10;
+        total += num;
+    }
+
+    total
+}
+
 impl Challenge for Day03 {
     fn do_p1(&mut self, input: &str) -> Result<usize> {
         let mut sum_biggest = 0;
@@ -25,10 +39,7 @@ impl Challenge for Day03 {
 
         for line in lines {
             let nums = line?;
-            let (left_pos, left_num) = find_max_and_pos(&nums[0..nums.len() - 1]);
-            let (_, right_num) = find_max_and_pos(&nums[(left_pos + 1)..nums.len()]);
-            let biggest = left_num * 10 + right_num;
-
+            let biggest = do_it(&nums, 2);
             sum_biggest += biggest
         }
 
@@ -41,47 +52,22 @@ impl Challenge for Day03 {
 
         for line in lines {
             let nums = line?;
-            let mut next_pos = 0;
-            let (p1_pos, p1_num) = find_max_and_pos(&nums[0..nums.len() - 11]);
-            next_pos += p1_pos + 1;
-            let (p2_pos, p2_num) = find_max_and_pos(&nums[next_pos..nums.len() - 10]);
-            next_pos += p2_pos + 1;
-            let (p3_pos, p3_num) = find_max_and_pos(&nums[next_pos..nums.len() - 9]);
-            next_pos += p3_pos + 1;
-            let (p4_pos, p4_num) = find_max_and_pos(&nums[next_pos..nums.len() - 8]);
-            next_pos += p4_pos + 1;
-            let (p5_pos, p5_num) = find_max_and_pos(&nums[next_pos..nums.len() - 7]);
-            next_pos += p5_pos + 1;
-            let (p6_pos, p6_num) = find_max_and_pos(&nums[next_pos..nums.len() - 6]);
-            next_pos += p6_pos + 1;
-            let (p7_pos, p7_num) = find_max_and_pos(&nums[next_pos..nums.len() - 5]);
-            next_pos += p7_pos + 1;
-            let (p8_pos, p8_num) = find_max_and_pos(&nums[next_pos..nums.len() - 4]);
-            next_pos += p8_pos + 1;
-            let (p9_pos, p9_num) = find_max_and_pos(&nums[next_pos..nums.len() - 3]);
-            next_pos += p9_pos + 1;
-            let (p10_pos, p10_num) = find_max_and_pos(&nums[next_pos..nums.len() - 2]);
-            next_pos += p10_pos + 1;
-            let (p11_pos, p11_num) = find_max_and_pos(&nums[next_pos..nums.len() - 1]);
-            next_pos += p11_pos + 1;
-            let (_, p12_num) = find_max_and_pos(&nums[next_pos..nums.len()]);
-
-            let biggest = p12_num
-                + p11_num * 10
-                + p10_num * 100
-                + p9_num * 1000
-                + p8_num * 10000
-                + p7_num * 100000
-                + p6_num * 1000000
-                + p5_num * 10000000
-                + p4_num * 100000000
-                + p3_num * 1000000000
-                + p2_num * 10000000000
-                + p1_num * 100000000000;
-
+            let biggest = do_it(&nums, 12);
             sum_biggest += biggest;
         }
 
         Ok(sum_biggest)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_do_it() {
+        assert_eq!(do_it(b"987654321111111", 12), 987654321111);
+        assert_eq!(do_it(b"811111111111119", 12), 811111111119);
+        assert_eq!(do_it(b"234234234234278", 12), 434234234278);
     }
 }
