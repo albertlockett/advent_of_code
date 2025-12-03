@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 
 pub mod d01;
 pub mod d02;
+pub mod d03;
 
 pub trait Challenge: Default {
     fn do_p1(&mut self, input: &str) -> Result<usize>;
