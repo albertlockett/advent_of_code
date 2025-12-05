@@ -27,15 +27,29 @@ impl Challenge for Day05 {
         let mut count_fresh_ids = 0;
 
         for i in 0..db.ranges.len() {
-            let mut curr_range = db.ranges[i];
+            let mut curr_ranges = vec![db.ranges[i]];
 
             // backtrack through previous ranges and remove over-lappings from start and end
             for j in 0..i {
-                curr_range = chop_range(curr_range, db.ranges[j]);
+                let mut new_ranges = vec![];
+                let prev_range = db.ranges[j];
+
+                #[allow(clippy::needless_range_loop)]
+                for k in 0..curr_ranges.len() {
+                    let chopped = chop_range(curr_ranges[k], prev_range);
+                    let split = split_range(chopped, prev_range);
+                    curr_ranges[k] = split.0;
+                    if let Some(split_rhs) = split.1 {
+                        new_ranges.push(split_rhs);
+                    }
+                }
+                curr_ranges.append(&mut new_ranges);
             }
 
-            if curr_range != (0, 0) {
-                count_fresh_ids += curr_range.1 - curr_range.0 + 1;
+            for curr_range in curr_ranges {
+                if curr_range != (0, 0) {
+                    count_fresh_ids += curr_range.1 - curr_range.0 + 1;
+                }
             }
         }
 
@@ -128,23 +142,26 @@ fn chop_range(target: (usize, usize), to_chop: (usize, usize)) -> (usize, usize)
     }
 
     // check overlap at start
-    if to_chop.0 <= target.0 {
-        if to_chop.1 <= target.1 {
-            if to_chop.1 >= target.0 {
-                return (to_chop.1 + 1, target.1);
-            }
-        }
+    if to_chop.0 <= target.0 && to_chop.1 <= target.1 && to_chop.1 >= target.0 {
+        return (to_chop.1 + 1, target.1);
     }
 
-    if to_chop.0 >= target.0 {
-        if to_chop.1 >= target.1 {
-            if to_chop.0 <= target.1 {
-                return (target.0, to_chop.0 - 1);
-            }
-        }
+    if to_chop.0 >= target.0 && to_chop.1 >= target.1 && to_chop.0 <= target.1 {
+        return (target.0, to_chop.0 - 1);
     }
 
     target
+}
+
+fn split_range(
+    target: (usize, usize),
+    to_split: (usize, usize),
+) -> ((usize, usize), Option<(usize, usize)>) {
+    if to_split.0 > target.0 && to_split.1 < target.1 {
+        ((target.0, to_split.0 - 1), Some((to_split.1 + 1, target.1)))
+    } else {
+        (target, None)
+    }
 }
 
 #[cfg(test)]
@@ -190,6 +207,12 @@ mod test {
         assert_eq!(chop_range((5, 8), (5, 8)), (0, 0));
 
         // test range in middle
-        // assert_eq!(chop_)
+        assert_eq!(chop_range((5, 10), (6, 8)), (0, 0))
+    }
+
+    #[test]
+    fn test_split_ranges() {
+        // test split
+        assert_eq!(split_range((5, 10), (6, 7)), ((5, 5), Some((8, 10))));
     }
 }
