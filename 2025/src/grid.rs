@@ -20,6 +20,11 @@ impl<T> Grid<T> {
         &self.data[self.index(row, col)]
     }
 
+    pub fn set(&mut self, row: usize, col: usize, item: T) {
+        let index = self.index(row, col);
+        self.data[index] = item;
+    }
+
     pub fn iter_neighbours(&self, row: usize, col: usize) -> NeighboursIter<'_, T> {
         NeighboursIter::new(self, row, col)
     }

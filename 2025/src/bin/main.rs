@@ -19,5 +19,5 @@ fn main() {
 
     let result = run::<Day04>("inputs/d04.txt").unwrap();
     println!("day04 = {result}");
-    assert_eq!(result, ChallengeAnswer::new(1578, 0));
+    assert_eq!(result, ChallengeAnswer::new(1578, 10132));
 }

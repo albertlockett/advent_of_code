@@ -35,7 +35,32 @@ impl Challenge for Day04 {
         Ok(accessible_roles)
     }
 
-    fn do_p2(&mut self, _input: &str) -> Result<usize> {
-        Ok(0)
+    fn do_p2(&mut self, input: &str) -> Result<usize> {
+        let bytes = Self::read_input_iter(input)?.bytes();
+        let mut grid = Grid::<Option<PaperRoll>>::try_from_byte_iter(bytes)?;
+
+        let mut total_removed = 0;
+        loop {
+            let mut removed_roles = 0;
+            for row in 0..grid.rows {
+                for col in 0..grid.cols {
+                    if grid.get(row, col).is_some() {
+                        let neighbours = grid.iter_neighbours(row, col).flatten().count();
+                        if neighbours < 4 {
+                            removed_roles += 1;
+                            grid.set(row, col, None);
+                        }
+                    }
+                }
+            }
+
+            total_removed += removed_roles;
+
+            if removed_roles == 0 {
+                break;
+            }
+        }
+
+        Ok(total_removed)
     }
 }
