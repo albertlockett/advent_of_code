@@ -1,19 +1,13 @@
 use std::io::{Read, Result};
 
 use crate::Challenge;
-use crate::grid::{self, Grid};
+use crate::grid::Grid;
 
 #[derive(Default)]
 pub struct Day04 {}
 
 #[derive(Debug, Default)]
 struct PaperRoll {}
-
-impl grid::Display for PaperRoll {
-    fn fmt(&self) -> char {
-        '@'
-    }
-}
 
 impl Challenge for Day04 {
     fn do_p1(&mut self, input: &str) -> Result<usize> {
