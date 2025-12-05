@@ -22,8 +22,24 @@ impl Challenge for Day05 {
         Ok(count_fresh)
     }
 
-    fn do_p2(&mut self, _input: &str) -> Result<usize> {
-        Ok(0)
+    fn do_p2(&mut self, input: &str) -> Result<usize> {
+        let db = FoodDb::try_from_byte_iter(Self::read_input_iter(input)?.bytes())?;
+        let mut count_fresh_ids = 0;
+
+        for i in 0..db.ranges.len() {
+            let mut curr_range = db.ranges[i];
+
+            // backtrack through previous ranges and remove over-lappings from start and end
+            for j in 0..i {
+                curr_range = chop_range(curr_range, db.ranges[j]);
+            }
+
+            if curr_range != (0, 0) {
+                count_fresh_ids += curr_range.1 - curr_range.0 + 1;
+            }
+        }
+
+        Ok(count_fresh_ids)
     }
 }
 
@@ -102,5 +118,78 @@ impl FoodDb {
         }
 
         Ok(food_ids)
+    }
+}
+
+fn chop_range(target: (usize, usize), to_chop: (usize, usize)) -> (usize, usize) {
+    // check full overlap
+    if to_chop.0 <= target.0 && to_chop.1 >= target.1 {
+        return (0, 0);
+    }
+
+    // check overlap at start
+    if to_chop.0 <= target.0 {
+        if to_chop.1 <= target.1 {
+            if to_chop.1 >= target.0 {
+                return (to_chop.1 + 1, target.1);
+            }
+        }
+    }
+
+    if to_chop.0 >= target.0 {
+        if to_chop.1 >= target.1 {
+            if to_chop.0 <= target.1 {
+                return (target.0, to_chop.0 - 1);
+            }
+        }
+    }
+
+    target
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_chop_range() {
+        // test chops at start
+        assert_eq!(chop_range((5, 10), (4, 6)), (7, 10));
+
+        // test chops at start, start fence post
+        assert_eq!(chop_range((5, 10), (5, 7)), (8, 10));
+
+        // test chops at start, end fence post
+        assert_eq!(chop_range((5, 10), (4, 5)), (6, 10));
+
+        // test full overlap
+        assert_eq!(chop_range((5, 7), (4, 8)), (0, 0));
+
+        // test full start fence post
+        assert_eq!(chop_range((5, 7), (5, 8)), (0, 0));
+
+        // test full end fence post
+        assert_eq!(chop_range((5, 7), (4, 7)), (0, 0));
+
+        // test chops at end
+        assert_eq!(chop_range((3, 8), (6, 9)), (3, 5));
+
+        // test chops at end, start fence post
+        assert_eq!(chop_range((3, 8), (8, 9)), (3, 7));
+
+        // test chops at end, end fence post
+        assert_eq!(chop_range((3, 8), (6, 8)), (3, 5));
+
+        // test no overlap before
+        assert_eq!(chop_range((1, 3), (5, 8)), (1, 3));
+
+        // test no overlap after
+        assert_eq!(chop_range((5, 6), (1, 3)), (5, 6));
+
+        // ranges equal
+        assert_eq!(chop_range((5, 8), (5, 8)), (0, 0));
+
+        // test range in middle
+        // assert_eq!(chop_)
     }
 }

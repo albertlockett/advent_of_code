@@ -24,5 +24,7 @@ fn main() {
 
     let result = run::<Day05>("inputs/d05.txt").unwrap();
     println!("day5 = {result}");
-    assert_eq!(result, ChallengeAnswer::new(501, 0));
+    // 357887254329902 too high (tried correcting the +1)
+    // 357887254329746 too high (initial attempt)
+    // assert_eq!(result, ChallengeAnswer::new(511, 0));
 }
