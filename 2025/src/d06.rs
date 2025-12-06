@@ -150,8 +150,8 @@ impl<'a> Iterator for ArgsIter<'a> {
     }
 }
 
-/// computes the vertical ranges of arguments from the op column, which happens ot always align
-/// with a set of arguments
+/// computes the vertical ranges of arguments from the op column, which happens to always align
+/// with the +/* operators (hence why this iterates the op column)
 struct ArgColumnRangeIter<'a> {
     chars: Chars<'a>,
     curr_range_start: usize,
