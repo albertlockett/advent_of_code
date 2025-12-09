@@ -30,7 +30,7 @@ impl<T> Grid<T> {
     }
 }
 
-impl<T> Grid<T>
+impl<T> Grid<Option<T>>
 where
     T: From<GridChar>,
 {
@@ -44,7 +44,8 @@ where
                     rows += 1;
                 }
                 b => {
-                    data.push(T::from(b.into()));
+                    let char: GridChar = b.into();
+                    data.push(char.into_optional());
                 }
             };
         }
@@ -62,8 +63,8 @@ where
     // used for debugging
     #[allow(dead_code)]
     pub fn display(&self) {
-        for col in 0..self.cols {
-            for row in 0..self.rows {
+        for row in 0..self.rows {
+            for col in 0..self.cols {
                 print!("{}", self.get(row, col).fmt())
             }
             println!();
@@ -101,14 +102,14 @@ impl From<u8> for GridChar {
     }
 }
 
-impl<T> From<GridChar> for Option<T>
-where
-    T: Default,
-{
-    fn from(value: GridChar) -> Self {
-        match *value {
+impl GridChar {
+    fn into_optional<T>(self) -> Option<T>
+    where
+        T: From<GridChar>,
+    {
+        match *self {
             b'.' => None,
-            _ => Some(T::default()),
+            _ => Some(T::from(self)),
         }
     }
 }

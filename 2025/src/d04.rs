@@ -1,13 +1,23 @@
 use std::io::{Read, Result};
 
 use crate::Challenge;
-use crate::grid::Grid;
+use crate::grid::{Grid, GridChar};
 
 #[derive(Default)]
 pub struct Day04 {}
 
 #[derive(Debug, Default)]
 struct PaperRoll {}
+
+impl From<GridChar> for PaperRoll {
+    fn from(value: GridChar) -> Self {
+        if *value == b'@' {
+            Self::default()
+        } else {
+            panic!("invalid value")
+        }
+    }
+}
 
 impl Challenge for Day04 {
     fn do_p1(&mut self, input: &str) -> Result<usize> {
