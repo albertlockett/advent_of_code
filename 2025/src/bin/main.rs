@@ -34,5 +34,5 @@ fn main() {
 
     let result = run::<Day07>("inputs/d07.txt").unwrap();
     println!("day7 = {result}");
-    assert_eq!(result, ChallengeAnswer::new(1541, 0));
+    assert_eq!(result, ChallengeAnswer::new(1541, 80158285728929));
 }

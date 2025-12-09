@@ -30,6 +30,19 @@ impl<T> Grid<T> {
     }
 }
 
+impl<T> Grid<T>
+where
+    T: Clone + Default,
+{
+    pub fn from_default(rows: usize, cols: usize) -> Self {
+        Self {
+            rows,
+            cols,
+            data: vec![T::default(); rows * cols],
+        }
+    }
+}
+
 impl<T> Grid<Option<T>>
 where
     T: From<GridChar>,
