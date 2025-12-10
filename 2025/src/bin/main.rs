@@ -37,6 +37,6 @@ fn main() {
     println!("day7 = {result}");
     assert_eq!(result, ChallengeAnswer::new(1541, 80158285728929));
 
-    let result = run::<Day08>("inputs/d08_test.txt").unwrap();
+    let result = run::<Day08>("inputs/d08.txt").unwrap();
     println!("day8 = {result}");
 }

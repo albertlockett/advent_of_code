@@ -1,7 +1,4 @@
-use std::{
-    io::{Read, Result},
-    usize,
-};
+use std::io::{Read, Result};
 
 use crate::Challenge;
 
@@ -10,9 +7,7 @@ pub struct Day08 {}
 
 impl Challenge for Day08 {
     fn do_p1(&mut self, input: &str) -> Result<usize> {
-        let parser = Parser {
-            inner: Self::read_input_iter(input)?.bytes(),
-        };
+        let parser = Parser::new(Self::read_input_iter(input)?.bytes());
 
         let mut xs = Vec::new();
         let mut ys = Vec::new();
@@ -26,10 +21,9 @@ impl Challenge for Day08 {
         let len = xs.len();
         let mut dist_calc = DistCal3D::new(xs, ys, zs);
 
-        let mut top_k = TopK::<10>::new();
+        let mut top_k = TopK::<1000>::new();
 
         for i in 0..len {
-            println!("{i}");
             dist_calc.calc_dist(i);
 
             for j in (i + 1)..len {
@@ -41,8 +35,6 @@ impl Challenge for Day08 {
                 top_k.insert(junc_dist);
             }
         }
-
-        println!("{:#?}", top_k);
 
         let mut circuit_id = 1usize;
         let mut circuits = vec![0; len];
@@ -77,6 +69,7 @@ impl Challenge for Day08 {
             }
 
             // now we're joining two circuits, need to update all the to to be from
+            #[allow(clippy::needless_range_loop)]
             for i in 0..len {
                 if circuits[i] == to_cid {
                     circuits[i] = from_cid;
@@ -84,25 +77,29 @@ impl Challenge for Day08 {
             }
         }
 
-        println!("{:?}", circuits);
-
-        let mut circuit_counts = vec![0usize; circuit_id as usize];
+        let mut circuit_counts = vec![0usize; circuit_id];
         for cid in circuits {
-            circuit_counts[cid] += 1;
+            if cid != 0 {
+                circuit_counts[cid] += 1;
+            }
         }
 
-        println!("{:?}", circuit_counts);
+        circuit_counts.sort();
+        circuit_counts.reverse();
 
-        Ok(0)
+        let top3 = circuit_counts[0..3].iter().product();
+        Ok(top3)
     }
 
-    fn do_p2(&mut self, input: &str) -> Result<usize> {
+    fn do_p2(&mut self, _input: &str) -> Result<usize> {
         Ok(0)
     }
 }
 
 #[derive(Debug)]
 struct TopK<const K: usize> {
+    max: usize,
+    max_idx: usize,
     values: [JunctionDist; K],
 }
 
@@ -118,25 +115,29 @@ impl<const K: usize> TopK<K> {
             .try_into()
             .unwrap();
 
-        Self { values }
+        Self {
+            values,
+            max: usize::MAX,
+            max_idx: 0,
+        }
     }
 
     fn insert(&mut self, new: JunctionDist) {
-        let mut max_dist_lower = 0;
-        let mut insert_at_idx = K;
+        if new.dist < self.max {
+            self.values[self.max_idx] = new;
+        }
 
+        let mut new_max = 0;
+        let mut new_max_idx = 0;
         for i in 0..K {
-            if new.dist < self.values[i].dist {
-                if self.values[i].dist > max_dist_lower {
-                    max_dist_lower = self.values[i].dist;
-                    insert_at_idx = i;
-                }
+            if self.values[i].dist > new_max {
+                new_max = self.values[i].dist;
+                new_max_idx = i;
             }
         }
 
-        if insert_at_idx < K {
-            self.values[insert_at_idx] = new
-        }
+        self.max = new_max;
+        self.max_idx = new_max_idx;
     }
 }
 
@@ -209,6 +210,16 @@ impl DistCalc {
 
 struct Parser<T> {
     inner: T,
+    exhausted: bool,
+}
+
+impl<T> Parser<T> {
+    fn new(inner: T) -> Self {
+        Self {
+            inner,
+            exhausted: false,
+        }
+    }
 }
 
 impl<T> Iterator for Parser<T>
@@ -218,24 +229,34 @@ where
     type Item = (i64, i64, i64);
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.exhausted {
+            return None;
+        }
+
         let mut next_x = None;
         let mut next_y = None;
         let mut curr = 0;
 
         loop {
-            match self.inner.next().transpose().unwrap()? {
-                b',' => {
-                    if next_x.is_none() {
-                        next_x = Some(curr)
-                    } else if next_y.is_none() {
-                        next_y = Some(curr)
+            match self.inner.next().transpose().unwrap() {
+                Some(b) => match b {
+                    b',' => {
+                        if next_x.is_none() {
+                            next_x = Some(curr)
+                        } else if next_y.is_none() {
+                            next_y = Some(curr)
+                        }
+                        curr = 0;
                     }
-                    curr = 0;
-                }
-                b'\n' => return Some((next_x.unwrap(), next_y.unwrap(), curr)),
-                num => {
-                    curr *= 10;
-                    curr += (num - b'0') as i64;
+                    b'\n' => return Some((next_x.unwrap(), next_y.unwrap(), curr)),
+                    num => {
+                        curr *= 10;
+                        curr += (num - b'0') as i64;
+                    }
+                },
+                None => {
+                    self.exhausted = true;
+                    return Some((next_x.unwrap(), next_y.unwrap(), curr));
                 }
             }
         }
