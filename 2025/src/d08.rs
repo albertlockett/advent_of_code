@@ -184,6 +184,7 @@ impl Challenge for Day08 {
                 }
             }
 
+            // update so next loop we take next k shortest distances
             top_k.min_value = top_k.max;
             top_k.max = usize::MAX;
         }
