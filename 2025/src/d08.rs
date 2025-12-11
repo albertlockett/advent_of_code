@@ -21,7 +21,7 @@ impl Challenge for Day08 {
         let len = xs.len();
         let mut dist_calc = DistCal3D::new(xs, ys, zs);
 
-        let mut top_k = TopK::<1000>::new();
+        let mut top_k = TopK::<1000>::new(0);
 
         for i in 0..len {
             dist_calc.calc_dist(i);
@@ -91,8 +91,102 @@ impl Challenge for Day08 {
         Ok(top3)
     }
 
-    fn do_p2(&mut self, _input: &str) -> Result<usize> {
-        Ok(0)
+    fn do_p2(&mut self, input: &str) -> Result<usize> {
+        let parser = Parser::new(Self::read_input_iter(input)?.bytes());
+
+        let mut xs = Vec::new();
+        let mut ys = Vec::new();
+        let mut zs = Vec::new();
+        for (x, y, z) in parser {
+            xs.push(x);
+            ys.push(y);
+            zs.push(z);
+        }
+
+        let len = xs.len();
+        let mut dist_calc = DistCal3D::new(xs, ys, zs);
+
+        // use topk that seems to be fast enough more/less
+        let mut top_k = TopK::<6400>::new(0);
+        let mut circuit_id = 1usize;
+        let mut circuits = vec![0; len];
+
+        loop {
+            // fill up topk
+            for i in 0..len {
+                dist_calc.calc_dist(i);
+
+                for j in (i + 1)..len {
+                    let junc_dist = JunctionDist {
+                        from: i,
+                        to: j,
+                        dist: dist_calc.result[j] as usize,
+                    };
+                    top_k.insert(junc_dist);
+                }
+            }
+
+            // sort topk
+            top_k.values.sort_by(|l, r| l.dist.cmp(&r.dist));
+
+            for connection in &top_k.values {
+                let from_cid = circuits[connection.from];
+                let to_cid = circuits[connection.to];
+
+                if from_cid == 0 && to_cid == 0 {
+                    // create new circuit
+                    circuits[connection.from] = circuit_id;
+                    circuits[connection.to] = circuit_id;
+                    circuit_id += 1;
+                } else if from_cid != 0 && to_cid == 0 {
+                    // connect to to from
+                    circuits[connection.to] = from_cid;
+                } else if from_cid == 0 && to_cid != 0 {
+                    // connect from junct to to
+                    circuits[connection.from] = to_cid;
+                } else if from_cid == to_cid {
+                    // nothing to do, already connected
+                } else {
+                    // now we're joining two circuits, need to update all the to to be from
+                    #[allow(clippy::needless_range_loop)]
+                    for i in 0..len {
+                        if circuits[i] == to_cid {
+                            circuits[i] = from_cid;
+                        }
+                    }
+                }
+
+                // check if all the circuit values are the same and non zero
+                let mut all_conn_cid = None;
+                let mut all_conn = true;
+                for cid in circuits.iter().copied() {
+                    if cid == 0 {
+                        all_conn = false;
+                        break;
+                    } else {
+                        match all_conn_cid {
+                            Some(all_conn_cid) => {
+                                if cid != all_conn_cid {
+                                    all_conn = false;
+                                    break;
+                                }
+                            }
+                            None => all_conn_cid = Some(cid),
+                        }
+                    }
+                }
+
+                // we're all connected
+                if all_conn {
+                    let to_x = dist_calc.x.input[connection.to] as usize;
+                    let from_x = dist_calc.x.input[connection.from] as usize;
+                    return Ok(to_x * from_x);
+                }
+            }
+
+            top_k.min_value = top_k.max;
+            top_k.max = usize::MAX;
+        }
     }
 }
 
@@ -101,10 +195,13 @@ struct TopK<const K: usize> {
     max: usize,
     max_idx: usize,
     values: [JunctionDist; K],
+
+    /// the minimum value we'll accept into the top k smallest distances
+    min_value: usize,
 }
 
 impl<const K: usize> TopK<K> {
-    fn new() -> Self {
+    fn new(min_value: usize) -> Self {
         let values = (0..K)
             .map(|_| JunctionDist {
                 dist: usize::MAX,
@@ -119,10 +216,15 @@ impl<const K: usize> TopK<K> {
             values,
             max: usize::MAX,
             max_idx: 0,
+            min_value,
         }
     }
 
     fn insert(&mut self, new: JunctionDist) {
+        if new.dist <= self.min_value {
+            return;
+        }
+
         if new.dist < self.max {
             self.values[self.max_idx] = new;
         }

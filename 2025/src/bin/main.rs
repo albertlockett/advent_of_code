@@ -39,4 +39,5 @@ fn main() {
 
     let result = run::<Day08>("inputs/d08.txt").unwrap();
     println!("day8 = {result}");
+    assert_eq!(result, ChallengeAnswer::new(79560, 31182420));
 }
