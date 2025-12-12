@@ -6,6 +6,7 @@ use aoc2025::d05::Day05;
 use aoc2025::d06::Day06;
 use aoc2025::d07::Day07;
 use aoc2025::d08::Day08;
+use aoc2025::d09::Day09;
 use aoc2025::{ChallengeAnswer, run};
 
 fn main() {
@@ -40,4 +41,8 @@ fn main() {
     let result = run::<Day08>("inputs/d08.txt").unwrap();
     println!("day8 = {result}");
     assert_eq!(result, ChallengeAnswer::new(79560, 31182420));
+
+    let result = run::<Day09>("inputs/d09.txt").unwrap();
+    println!("day9 = {result}");
+    assert_eq!(result, ChallengeAnswer::new(4772103936, 0));
 }
