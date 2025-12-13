@@ -51,7 +51,8 @@ impl Challenge for Day09 {
     fn do_p2(&mut self, input: &str) -> Result<usize> {
         let coords = Self::read_cords::<usize>(input)?;
 
-        // initialize a grid (internal bitmap) containing which rows are inside
+        // going to initialize some bitmap backed grids to contain coordinates
+        // so calculate the grid size
         // (+ 2 so we don't have to futz w/ out of bounds I guess)
         let max_row = coords
             .iter()
@@ -82,10 +83,10 @@ impl Challenge for Day09 {
             *coords.first().expect("not_empty"),
         );
 
-        // now we're going to build up a set of points that are outside the loop
+        // now we're going to build up a set of points that are outside the loop.
         // some of the code below may seem strange, but it makes sense when you realize
-        // that the loop is a big circle with a rectangle cut out of the middle centered
-        // at (50_000, 50_000). I figured this out using excel.
+        // that the loop is a big circle with a rectangle kind of cut into one side of
+        // and it's centered at at (50_000, 50_000). I figured this out using excel.
         let mut outside = Outside::new(max_row, max_col);
 
         fn calc_squared_dist_from_middle(row: usize, col: usize) -> usize {
@@ -103,10 +104,13 @@ impl Challenge for Day09 {
         }
 
         // we'll only fill in the outside set around a thin margin around the circle.
-        // this is the radius squared of that outer ring
+        // this is the radius squared of that outer ring. This is faster than calculating
+        // every point that's outside (and faster than every point inside) because it's
+        // fewer coordinates
         let outer_radius_squared = (max_dist_from_middle as f64 * 1.0001) as usize;
 
         // start at a known outside point that is within the outside radius
+        // again, point found using excel
         let mut curr_squares = vec![(1600, 52000)];
         let mut next_squares = Vec::new();
 
@@ -153,6 +157,7 @@ impl Challenge for Day09 {
                 }
             }
 
+            // just keep draining and swapping arrays to avoid heap allocations
             std::mem::swap(&mut curr_squares, &mut next_squares);
             next_squares.clear();
         }
